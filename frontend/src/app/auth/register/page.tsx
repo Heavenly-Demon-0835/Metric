@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Activity, ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Form Data
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [age, setAge] = useState("");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [gender, setGender] = useState("");
+
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep(step + 1);
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const payload = {
+        name,
+        email,
+        password,
+        age: age ? parseInt(age) : null,
+        weight: weight ? parseFloat(weight) : null,
+        height: height ? parseFloat(height) : null,
+        gender: gender || null
+      };
+
+      const res = await fetch("http://127.0.0.1:8000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        let errorMsg = "Registration failed";
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch (_) {}
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      localStorage.setItem("token", data.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="flex flex-1 flex-col p-6">
+      <header className="flex items-center justify-between mb-8 mt-2">
+        <button 
+          onClick={() => step > 1 ? setStep(step - 1) : router.push('/')}
+          className="p-2 -ml-2 text-muted-foreground hover:text-foreground active:bg-secondary rounded-full transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <Activity size={24} className="text-primary" />
+        <div className="w-10 flex justify-end">
+          <span className="text-sm font-bold text-muted-foreground">{step}/3</span>
+        </div>
+      </header>
+
+      <div className="flex-1 flex flex-col pb-20">
+        
+        {step === 1 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Create Account</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Let's get your basics down</p>
+
+            <form onSubmit={handleNext} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Full Name</label>
+                <Input 
+                  placeholder="John Doe" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Email</label>
+                <Input 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Password</label>
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required 
+                    minLength={6}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-[14px] text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="pt-4">
+                <Button type="submit" className="w-full">
+                  Continue <ArrowRight className="ml-2" size={20} />
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2">About You</h1>
+            <p className="text-muted-foreground mb-8 text-lg">This helps us personalize your metrics</p>
+
+            <form onSubmit={handleNext} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Age</label>
+                <Input 
+                  type="number" 
+                  placeholder="e.g. 25" 
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Gender</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['Male', 'Female', 'Other', 'Prefer not to say'].map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`h-14 rounded-2xl border text-sm font-bold transition-all ${
+                        gender === g 
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
+                          : 'bg-background text-foreground border-input hover:bg-secondary'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="pt-8">
+                <Button type="submit" className="w-full" disabled={!age || !gender}>
+                  Continue <ArrowRight className="ml-2" size={20} />
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Your Body</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Final step before we begin</p>
+
+            <form onSubmit={handleRegister} className="space-y-5">
+              {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg animate-in fade-in slide-in-from-top-2">{error}</div>}
+              
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Weight (kg)</label>
+                <Input 
+                  type="number" 
+                  step="0.1"
+                  placeholder="e.g. 70.5" 
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground ml-1">Height (cm)</label>
+                <Input 
+                  type="number" 
+                  placeholder="e.g. 175" 
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  required 
+                />
+              </div>
+              
+              <div className="pt-8">
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Processing..." : "Complete Registration"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {step === 1 && (
+          <p className="text-center text-muted-foreground mt-8 text-base">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-primary font-bold hover:underline">
+              Sign In
+            </Link>
+          </p>
+        )}
+      </div>
+    </main>
+  );
+}
