@@ -1,13 +1,20 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, workouts, cardio, sleep, diet, user, sync
 
+load_dotenv()
+
 app = FastAPI(title="Metric API", description="Fitness Logger Backend")
 
-# CORS must be added before routers to properly intercept preflight requests
+# Build allowed origins list from environment (comma-separated) + defaults
+_extra_origins = os.getenv("ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in _extra_origins.split(",") if o.strip()] if _extra_origins else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
