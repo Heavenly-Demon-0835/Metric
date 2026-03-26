@@ -16,7 +16,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex flex-col w-full gap-4 mt-auto mb-10 w-full px-2">
+      <div className="flex flex-col w-full gap-4 mt-auto mb-10 px-2">
         <Link 
           href="/auth/register" 
           className="w-full flex items-center justify-center py-4 bg-primary text-primary-foreground rounded-2xl font-bold text-lg shadow-sm active:scale-[0.98] transition-all"
