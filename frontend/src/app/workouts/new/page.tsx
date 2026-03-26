@@ -107,7 +107,7 @@ export default function NewWorkout() {
       });
 
       if (!res.ok) throw new Error("Failed to save workout");
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {

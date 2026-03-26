@@ -57,7 +57,7 @@ export default function NewDietEntry() {
       });
 
       if (!res.ok) throw new Error("Failed to save diet entry");
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
