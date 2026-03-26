@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Apple, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE, getAuthHeaders } from "@/lib/api";
 
 export default function NewDietEntry() {
+  const router = useRouter();
   const [mealName, setMealName] = useState("");
   const [calories, setCalories] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   
   // Macros
   const [showMacros, setShowMacros] = useState(false);
@@ -22,15 +27,42 @@ export default function NewDietEntry() {
   const [newSupplement, setNewSupplement] = useState("");
 
   const handleAddSupplement = () => {
-    if (newSupplement.trim() && !supplements.includes(newSupplement)) {
+    if (newSupplement.trim() && !supplements.includes(newSupplement.trim())) {
       setSupplements([...supplements, newSupplement.trim()]);
     }
     setNewSupplement("");
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementation
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const payload: any = {
+        meal_name: mealName,
+        calories: parseInt(calories) || 0,
+      };
+
+      if (protein) payload.protein_g = parseFloat(protein);
+      if (carbs) payload.carbs_g = parseFloat(carbs);
+      if (fat) payload.fat_g = parseFloat(fat);
+      if (water) payload.water_ml = parseInt(water);
+      if (supplements.length > 0) payload.supplements = supplements;
+
+      const res = await fetch(`${API_BASE}/diet/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to save diet entry");
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,12 +87,14 @@ export default function NewDietEntry() {
       </div>
 
       <form onSubmit={handleSave} className="p-6 space-y-6 flex-1 mt-4">
+        {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg">{error}</div>}
         
         {/* Core Meal */}
         <section className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-bold ml-1">Meal Name</label>
+            <label htmlFor="diet-meal" className="text-sm font-bold ml-1">Meal Name</label>
             <Input 
+              id="diet-meal"
               placeholder="e.g. Chicken & Rice" 
               value={mealName}
               onChange={(e) => setMealName(e.target.value)}
@@ -69,8 +103,9 @@ export default function NewDietEntry() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-bold ml-1">Total Calories (kcal)</label>
+            <label htmlFor="diet-calories" className="text-sm font-bold ml-1">Total Calories (kcal)</label>
             <Input 
+              id="diet-calories"
               type="number" 
               placeholder="0" 
               value={calories}
@@ -94,23 +129,23 @@ export default function NewDietEntry() {
           {showMacros && (
             <div className="grid grid-cols-3 gap-3 mt-4 animate-in fade-in slide-in-from-top-2">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase text-center block">Protein</label>
+                <label htmlFor="diet-protein" className="text-xs font-bold text-muted-foreground uppercase text-center block">Protein</label>
                 <div className="relative">
-                  <Input type="number" placeholder="0" value={protein} onChange={e => setProtein(e.target.value)} className="text-center font-bold pr-6" />
+                  <Input id="diet-protein" type="number" placeholder="0" value={protein} onChange={e => setProtein(e.target.value)} className="text-center font-bold pr-6" />
                   <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">g</span>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase text-center block">Carbs</label>
+                <label htmlFor="diet-carbs" className="text-xs font-bold text-muted-foreground uppercase text-center block">Carbs</label>
                 <div className="relative">
-                  <Input type="number" placeholder="0" value={carbs} onChange={e => setCarbs(e.target.value)} className="text-center font-bold pr-6" />
+                  <Input id="diet-carbs" type="number" placeholder="0" value={carbs} onChange={e => setCarbs(e.target.value)} className="text-center font-bold pr-6" />
                   <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">g</span>
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase text-center block">Fats</label>
+                <label htmlFor="diet-fat" className="text-xs font-bold text-muted-foreground uppercase text-center block">Fats</label>
                 <div className="relative">
-                  <Input type="number" placeholder="0" value={fat} onChange={e => setFat(e.target.value)} className="text-center font-bold pr-6" />
+                  <Input id="diet-fat" type="number" placeholder="0" value={fat} onChange={e => setFat(e.target.value)} className="text-center font-bold pr-6" />
                   <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">g</span>
                 </div>
               </div>
@@ -123,8 +158,9 @@ export default function NewDietEntry() {
         {/* Hydration & Supps */}
         <section className="space-y-6">
           <div className="space-y-2">
-            <label className="text-sm font-bold ml-1">Water Intake (ml)</label>
+            <label htmlFor="diet-water" className="text-sm font-bold ml-1">Water Intake (ml)</label>
             <Input 
+              id="diet-water"
               type="number" 
               step="100"
               placeholder="e.g. 500" 
@@ -162,8 +198,8 @@ export default function NewDietEntry() {
 
         {/* Fixed Save Button */}
         <div className="fixed bottom-0 left-0 right-0 p-6 max-w-md mx-auto bg-gradient-to-t from-background via-background to-transparent pt-12">
-          <Button type="submit" className="w-full h-14 text-lg shadow-xl shadow-primary/20">
-            Save Entry
+          <Button type="submit" className="w-full h-14 text-lg shadow-xl shadow-primary/20" disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Entry"}
           </Button>
         </div>
       </form>

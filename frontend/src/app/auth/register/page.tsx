@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Activity, ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function RegisterPage() {
         gender: gender || null
       };
 
-      const res = await fetch("http://127.0.0.1:8000/auth/register", {
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -55,7 +56,7 @@ export default function RegisterPage() {
         try {
           const errData = await res.json();
           errorMsg = errData.detail || errorMsg;
-        } catch (_) {}
+        } catch {}
         throw new Error(errorMsg);
       }
 
@@ -93,8 +94,9 @@ export default function RegisterPage() {
 
             <form onSubmit={handleNext} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Full Name</label>
+                <label htmlFor="reg-name" className="text-sm font-semibold text-foreground ml-1">Full Name</label>
                 <Input 
+                  id="reg-name"
                   placeholder="John Doe" 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -102,8 +104,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Email</label>
+                <label htmlFor="reg-email" className="text-sm font-semibold text-foreground ml-1">Email</label>
                 <Input 
+                  id="reg-email"
                   type="email" 
                   placeholder="name@example.com" 
                   value={email}
@@ -112,9 +115,10 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Password</label>
+                <label htmlFor="reg-password" className="text-sm font-semibold text-foreground ml-1">Password</label>
                 <div className="relative">
                   <Input 
+                    id="reg-password"
                     type={showPassword ? "text" : "password"} 
                     placeholder="••••••••" 
                     value={password}
@@ -149,8 +153,9 @@ export default function RegisterPage() {
 
             <form onSubmit={handleNext} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Age</label>
+                <label htmlFor="reg-age" className="text-sm font-semibold text-foreground ml-1">Age</label>
                 <Input 
+                  id="reg-age"
                   type="number" 
                   placeholder="e.g. 25" 
                   value={age}
@@ -196,8 +201,9 @@ export default function RegisterPage() {
               {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg animate-in fade-in slide-in-from-top-2">{error}</div>}
               
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Weight (kg)</label>
+                <label htmlFor="reg-weight" className="text-sm font-semibold text-foreground ml-1">Weight (kg)</label>
                 <Input 
+                  id="reg-weight"
                   type="number" 
                   step="0.1"
                   placeholder="e.g. 70.5" 
@@ -207,8 +213,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Height (cm)</label>
+                <label htmlFor="reg-height" className="text-sm font-semibold text-foreground ml-1">Height (cm)</label>
                 <Input 
+                  id="reg-height"
                   type="number" 
                   placeholder="e.g. 175" 
                   value={height}

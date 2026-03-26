@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Moon, Square, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE, getAuthHeaders } from "@/lib/api";
 
 export default function SleepTracker() {
   const [activeTab, setActiveTab] = useState<"toggle" | "manual">("toggle");
@@ -16,6 +17,23 @@ export default function SleepTracker() {
   // Manual State
   const [duration, setDuration] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const saveSleepLog = async (hours: number) => {
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/sleep/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ duration_hours: hours }),
+      });
+      if (!res.ok) throw new Error("Failed to save sleep log");
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 4000);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
 
   const handleToggle = () => {
     if (!isSleeping) {
@@ -23,25 +41,24 @@ export default function SleepTracker() {
       setSleepStart(new Date());
       setIsSaved(false);
     } else {
+      if (sleepStart) {
+        const elapsed = (Date.now() - sleepStart.getTime()) / (1000 * 60 * 60);
+        saveSleepLog(parseFloat(elapsed.toFixed(2)));
+      }
       setIsSleeping(false);
       setSleepStart(null);
-      // Show success message inline instead of throwing out to dashboard
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 4000);
     }
   };
 
-  const handleManualSave = (e?: React.FormEvent) => {
+  const handleManualSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!duration) {
-      alert("Please enter a sleep duration.");
+      setError("Please enter a sleep duration.");
       return;
     }
     
-    // Show success message inline
-    setIsSaved(true);
+    await saveSleepLog(parseFloat(duration));
     setDuration("");
-    setTimeout(() => setIsSaved(false), 4000);
   };
 
   return (
@@ -70,7 +87,7 @@ export default function SleepTracker() {
       </div>
 
       <div className="flex-1 flex flex-col">
-        {/* Success Modal/Toast overlay */}
+        {/* Success Toast */}
         {isSaved && (
           <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
              <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl flex items-center justify-center gap-3">
@@ -78,6 +95,11 @@ export default function SleepTracker() {
                <span className="font-bold text-lg">Sleep safely logged!</span>
              </div>
           </div>
+        )}
+
+        {/* Error Toast */}
+        {error && (
+          <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">{error}</div>
         )}
 
         {activeTab === "toggle" ? (
@@ -130,10 +152,11 @@ export default function SleepTracker() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
+                <label htmlFor="sleep-duration" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
                   <Moon size={18} className="text-primary" /> Duration (hours)
                 </label>
                 <Input 
+                  id="sleep-duration"
                   type="number" 
                   step="0.5"
                   placeholder="e.g. 7.5" 
@@ -144,8 +167,7 @@ export default function SleepTracker() {
               </div>
 
               <div className="pt-8 mt-auto">
-                {/* Changed to button type to avoid silent HTML5 validation blocks on mobile */}
-                <Button type="button" onClick={() => handleManualSave()} className="w-full h-16 text-lg shadow-xl shadow-primary/20 transition-colors">
+                <Button type="submit" className="w-full h-16 text-lg shadow-xl shadow-primary/20 transition-colors">
                   Submit Sleep Log
                 </Button>
               </div>

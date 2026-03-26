@@ -6,10 +6,13 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Activity, Timer, Navigation, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE, getAuthHeaders } from "@/lib/api";
 
 export default function NewCardio() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"gps" | "manual">("manual");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   
   // Manual State
   const [duration, setDuration] = useState("");
@@ -18,14 +21,31 @@ export default function NewCardio() {
   // GPS State Mockup
   const [isTracking, setIsTracking] = useState(false);
 
-  const handleManualSave = (e: React.FormEvent) => {
+  const handleManualSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/cardio/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          duration_minutes: parseInt(duration) || 0,
+          distance_km: parseFloat(distance) || 0,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save cardio session");
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleTracking = () => {
     if (isTracking) {
-      alert("GPS Tracking stopped! Cardio saved to dummy db.");
       setIsTracking(false);
       router.push("/dashboard");
     } else {
@@ -61,6 +81,8 @@ export default function NewCardio() {
       <div className="flex-1 flex flex-col px-6">
         {activeTab === "manual" ? (
           <form onSubmit={handleManualSave} className="space-y-8 animate-in fade-in slide-in-from-left-4">
+            {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg">{error}</div>}
+            
             <div className="bg-background border rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center text-center gap-4 py-8">
               <div className="p-4 bg-primary/10 text-primary rounded-full mb-2">
                 <Activity size={48} />
@@ -73,10 +95,11 @@ export default function NewCardio() {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
+                <label htmlFor="cardio-duration" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
                   <Timer size={18} className="text-primary" /> Duration (minutes)
                 </label>
                 <Input 
+                  id="cardio-duration"
                   type="number" 
                   placeholder="e.g. 30" 
                   value={duration}
@@ -87,10 +110,11 @@ export default function NewCardio() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
+                <label htmlFor="cardio-distance" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
                   <Navigation size={18} className="text-primary" /> Distance (km)
                 </label>
                 <Input 
+                  id="cardio-distance"
                   type="number" 
                   step="0.1"
                   placeholder="e.g. 5.2" 
@@ -103,8 +127,8 @@ export default function NewCardio() {
             </div>
 
             <div className="pt-8">
-              <Button type="submit" className="w-full h-14 text-lg shadow-xl shadow-primary/20">
-                Save Cardio Session
+              <Button type="submit" className="w-full h-14 text-lg shadow-xl shadow-primary/20" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Cardio Session"}
               </Button>
             </div>
           </form>
@@ -116,7 +140,7 @@ export default function NewCardio() {
               </div>
               <h2 className="font-bold text-lg text-foreground">Live GPS Tracking</h2>
               <p className="text-muted-foreground text-sm max-w-[280px]">
-                We can easily integrate React Leaflet to map your route in real-time and auto-calculate distance/pace!
+                GPS integration coming soon — track your route in real-time and auto-calculate distance/pace!
               </p>
             </div>
 

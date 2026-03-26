@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Mail, Activity, LogOut } from "lucide-react";
+import { ArrowLeft, Activity, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { API_BASE, getAuthHeaders } from "@/lib/api";
 
 export default function Profile() {
   const router = useRouter();
@@ -20,10 +21,8 @@ export default function Profile() {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/users/me", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+        const res = await fetch(`${API_BASE}/users/me`, {
+          headers: getAuthHeaders()
         });
 
         if (!res.ok) {
@@ -86,7 +85,7 @@ export default function Profile() {
           
           <div className="flex justify-between items-center border-b pb-3 border-border">
             <span className="font-semibold text-foreground">Age</span>
-            <span className="font-bold text-muted-foreground">{profile.age || "-"}</span>
+            <span className="font-bold text-muted-foreground">{profile.age ?? "-"}</span>
           </div>
           <div className="flex justify-between items-center border-b pb-3 border-border">
             <span className="font-semibold text-foreground">Gender</span>
@@ -94,11 +93,11 @@ export default function Profile() {
           </div>
           <div className="flex justify-between items-center border-b pb-3 border-border">
             <span className="font-semibold text-foreground">Weight (kg)</span>
-            <span className="font-bold text-muted-foreground">{profile.weight || "-"}</span>
+            <span className="font-bold text-muted-foreground">{profile.weight ?? "-"}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="font-semibold text-foreground">Height (cm)</span>
-            <span className="font-bold text-muted-foreground">{profile.height || "-"}</span>
+            <span className="font-bold text-muted-foreground">{profile.height ?? "-"}</span>
           </div>
         </section>
       </div>

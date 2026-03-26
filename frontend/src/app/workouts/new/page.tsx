@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE, getAuthHeaders } from "@/lib/api";
 
 type SetRecord = {
   id: string;
@@ -19,9 +21,12 @@ type ExerciseLog = {
 };
 
 export default function NewWorkout() {
+  const router = useRouter();
   const [exercises, setExercises] = useState<ExerciseLog[]>([
     { id: "1", name: "", sets: [{ id: "1-1", reps: "", effort: "Reps in Reserve" }] }
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const addExercise = () => {
     setExercises([...exercises, { 
@@ -75,8 +80,39 @@ export default function NewWorkout() {
     }));
   };
 
-  const handleSave = () => {
-    // TODO: implement logic
+  const handleSave = async () => {
+    setError("");
+    const validExercises = exercises.filter(ex => ex.name.trim());
+    if (validExercises.length === 0) {
+      setError("Add at least one exercise with a name.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        exercises: validExercises.map(ex => ({
+          name: ex.name,
+          sets: ex.sets.filter(s => s.reps).map(s => ({
+            reps: parseInt(s.reps) || 0,
+            effort: s.effort
+          }))
+        }))
+      };
+
+      const res = await fetch(`${API_BASE}/workouts/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to save workout");
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -89,6 +125,8 @@ export default function NewWorkout() {
         <div className="w-10" />
       </header>
 
+      {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">{error}</div>}
+
       <div className="space-y-8">
         {exercises.map((exercise, index) => (
           <div key={exercise.id} className="bg-card border rounded-3xl p-5 shadow-sm">
@@ -98,6 +136,7 @@ export default function NewWorkout() {
                 <button 
                   onClick={() => removeExercise(exercise.id)}
                   className="text-destructive p-1 rounded-full hover:bg-destructive/10"
+                  aria-label="Remove exercise"
                 >
                   <Trash2 size={18} />
                 </button>
@@ -144,6 +183,7 @@ export default function NewWorkout() {
                     <button 
                       onClick={() => removeSet(exercise.id, set.id)}
                       className="w-8 h-12 flex items-center justify-center text-muted-foreground hover:text-destructive"
+                      aria-label="Remove set"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -178,8 +218,8 @@ export default function NewWorkout() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-background/80 backdrop-blur-md border-t max-w-md mx-auto">
-        <Button onClick={handleSave} className="w-full h-14 text-lg shadow-xl shadow-primary/20">
-          Save Workout
+        <Button onClick={handleSave} className="w-full h-14 text-lg shadow-xl shadow-primary/20" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Save Workout"}
         </Button>
       </div>
     </main>

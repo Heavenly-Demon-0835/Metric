@@ -1,7 +1,6 @@
 import { synchronize } from '@nozbe/watermelondb/sync'
 import { database } from './index'
-
-const API_BASE = 'http://127.0.0.1:8000'
+import { API_BASE, getAuthHeaders } from '@/lib/api'
 
 export async function syncDatabase() {
   if (!database) {
@@ -9,7 +8,7 @@ export async function syncDatabase() {
     return
   }
   
-  const token = localStorage.getItem("token")
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null
   if (!token) {
     console.log('[Sync] No auth token found, skipping sync.')
     return
@@ -20,7 +19,7 @@ export async function syncDatabase() {
       database,
       pullChanges: async ({ lastPulledAt }) => {
         const response = await fetch(`${API_BASE}/sync?last_pulled_at=${lastPulledAt || 0}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: getAuthHeaders()
         })
         
         if (!response.ok) {
@@ -34,7 +33,7 @@ export async function syncDatabase() {
         const response = await fetch(`${API_BASE}/sync`, {
           method: 'POST',
           headers: { 
-            'Authorization': `Bearer ${token}`,
+            ...getAuthHeaders(),
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ changes, lastPulledAt }),

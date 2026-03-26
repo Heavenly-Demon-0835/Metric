@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Activity, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_BASE } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function LoginPage() {
       formData.append("username", email);
       formData.append("password", password);
 
-      const res = await fetch("http://127.0.0.1:8000/auth/login", {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -34,8 +35,15 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || "Failed to log in");
+        let errorMsg = "Failed to log in";
+        try {
+          const errData = await res.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch {
+          // Response body was not JSON — use status text
+          errorMsg = res.statusText || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await res.json();
@@ -66,8 +74,9 @@ export default function LoginPage() {
           {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg animate-in fade-in slide-in-from-top-2">{error}</div>}
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground ml-1">Email</label>
+            <label htmlFor="login-email" className="text-sm font-semibold text-foreground ml-1">Email</label>
             <Input 
+              id="login-email"
               type="email" 
               placeholder="name@example.com" 
               value={email}
@@ -77,9 +86,10 @@ export default function LoginPage() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground ml-1">Password</label>
+            <label htmlFor="login-password" className="text-sm font-semibold text-foreground ml-1">Password</label>
             <div className="relative">
               <Input 
+                id="login-password"
                 type={showPassword ? "text" : "password"} 
                 placeholder="••••••••" 
                 value={password}
