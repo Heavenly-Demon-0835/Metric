@@ -35,6 +35,8 @@ class CardioSession(BaseModel):
     date: datetime = Field(default_factory=datetime.utcnow)
     duration_minutes: int = 0
     distance_km: float = 0.0
+    activity_type: Optional[str] = None  # "Walking", "Running"
+    route_coords: List = []  # [[lat, lng], ...]
 
 
 class SleepLog(BaseModel):

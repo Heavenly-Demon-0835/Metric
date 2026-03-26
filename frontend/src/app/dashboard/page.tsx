@@ -11,10 +11,13 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
+    // Prevent browser back-button from reaching auth pages
+    window.history.replaceState(null, "", "/dashboard");
+
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        router.push("/auth/login");
+        router.replace("/auth/login");
         return;
       }
       try {
@@ -24,7 +27,7 @@ export default function Dashboard() {
         if (res.ok) setProfile(await res.json());
         if (res.status === 401) {
           localStorage.removeItem("token");
-          router.push("/auth/login");
+          router.replace("/auth/login");
         }
       } catch (err) {
         console.error("Failed to fetch profile:", err);

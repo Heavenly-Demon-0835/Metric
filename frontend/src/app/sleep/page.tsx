@@ -13,13 +13,14 @@ export default function SleepTracker() {
   // Toggle State
   const [isSleeping, setIsSleeping] = useState(false);
   const [sleepStart, setSleepStart] = useState<Date | null>(null);
+  const [loggedHours, setLoggedHours] = useState<number | null>(null);
   
   // Manual State
   const [duration, setDuration] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState("");
 
-  const saveSleepLog = async (hours: number) => {
+  const saveSleepLog = async (hours: number): Promise<boolean> => {
     setError("");
     try {
       const res = await fetch(`${API_BASE}/sleep/`, {
@@ -28,25 +29,36 @@ export default function SleepTracker() {
         body: JSON.stringify({ duration_hours: hours }),
       });
       if (!res.ok) throw new Error("Failed to save sleep log");
+      setLoggedHours(hours);
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 4000);
+      setTimeout(() => {
+        setIsSaved(false);
+        setLoggedHours(null);
+      }, 5000);
+      return true;
     } catch (err: any) {
       setError(err.message);
+      return false;
     }
   };
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
     if (!isSleeping) {
+      // Start sleeping
       setIsSleeping(true);
       setSleepStart(new Date());
       setIsSaved(false);
+      setLoggedHours(null);
     } else {
+      // Wake up — save first, then reset
       if (sleepStart) {
         const elapsed = (Date.now() - sleepStart.getTime()) / (1000 * 60 * 60);
-        saveSleepLog(parseFloat(elapsed.toFixed(2)));
+        const saved = await saveSleepLog(parseFloat(elapsed.toFixed(2)));
+        if (saved) {
+          setIsSleeping(false);
+          setSleepStart(null);
+        }
       }
-      setIsSleeping(false);
-      setSleepStart(null);
     }
   };
 
@@ -57,8 +69,8 @@ export default function SleepTracker() {
       return;
     }
     
-    await saveSleepLog(parseFloat(duration));
-    setDuration("");
+    const saved = await saveSleepLog(parseFloat(duration));
+    if (saved) setDuration("");
   };
 
   return (
@@ -92,7 +104,9 @@ export default function SleepTracker() {
           <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
              <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl flex items-center justify-center gap-3">
                <CheckCircle2 size={24} />
-               <span className="font-bold text-lg">Sleep safely logged!</span>
+               <span className="font-bold text-lg">
+                 {loggedHours !== null ? `Logged ${loggedHours.toFixed(1)} hours!` : "Sleep safely logged!"}
+               </span>
              </div>
           </div>
         )}
@@ -166,7 +180,7 @@ export default function SleepTracker() {
                 />
               </div>
 
-              <div className="pt-8 mt-auto">
+              <div className="pt-4 pb-6">
                 <Button type="submit" className="w-full h-16 text-lg shadow-xl shadow-primary/20 transition-colors">
                   Submit Sleep Log
                 </Button>
