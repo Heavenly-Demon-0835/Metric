@@ -8,7 +8,7 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 @router.get("/")
 async def pull_changes(last_pulled_at: int = 0, user=Depends(get_current_user)):
     user_id = str(user["_id"])
-    tables = ["workouts", "cardio", "sleep", "diet"]
+    tables = ["workouts", "cardio", "sleep", "diet", "food_items", "daily_goals"]
     changes = {}
     
     for table_name in tables:
@@ -51,7 +51,7 @@ async def push_changes(request: Request, user=Depends(get_current_user)):
     last_pulled_at = data.get("lastPulledAt", 0)
     user_id = str(user["_id"])
     
-    tables = ["workouts", "cardio", "sleep", "diet"]
+    tables = ["workouts", "cardio", "sleep", "diet", "food_items", "daily_goals"]
     
     for table_name in tables:
         table_changes = changes.get(table_name, {})

@@ -46,6 +46,35 @@ class SleepLog(BaseModel):
     quality: Optional[str] = None
 
 
+class FoodItem(BaseModel):
+    user_id: str = ""
+    name: str
+    calories_per_100g: float
+    protein_per_100g: float = 0
+    carbs_per_100g: float = 0
+    fat_per_100g: float = 0
+    is_staple: bool = False
+    meal_context: Optional[str] = None  # "breakfast" | "lunch" | "dinner" | "snack"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DailyGoal(BaseModel):
+    user_id: str = ""
+    metric_type: str  # "calories" | "protein" | "water" | "workout"
+    target_value: float
+    frequency: str = "daily"
+
+
+class DietLogItem(BaseModel):
+    food_id: Optional[str] = None
+    food_name: str = ""
+    weight_g: float = 100
+    calories: float = 0
+    protein_g: float = 0
+    carbs_g: float = 0
+    fat_g: float = 0
+
+
 class DietLog(BaseModel):
     user_id: str = ""
     date: datetime = Field(default_factory=datetime.utcnow)
@@ -55,6 +84,7 @@ class DietLog(BaseModel):
     carbs_g: Optional[float] = None
     fat_g: Optional[float] = None
     supplements: List[str] = []
+    items: List[DietLogItem] = []
 
 
 class WaterLog(BaseModel):

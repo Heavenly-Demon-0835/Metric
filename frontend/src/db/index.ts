@@ -7,6 +7,8 @@ import Workout from './models/Workout'
 import Cardio from './models/Cardio'
 import Sleep from './models/Sleep'
 import Diet from './models/Diet'
+import FoodItem from './models/FoodItem'
+import DailyGoal from './models/DailyGoal'
 
 let database: Database | null = null
 
@@ -35,6 +37,8 @@ if (typeof window !== 'undefined') {
       Cardio,
       Sleep,
       Diet,
+      FoodItem,
+      DailyGoal,
     ],
   })
 }

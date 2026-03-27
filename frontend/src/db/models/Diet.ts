@@ -2,6 +2,7 @@ import { Model } from '@nozbe/watermelondb'
 import { field, date, readonly, json } from '@nozbe/watermelondb/decorators'
 
 const sanitizeSupps = (raw: any) => Array.isArray(raw) ? raw : []
+const sanitizeItems = (raw: any) => Array.isArray(raw) ? raw : []
 
 export default class Diet extends Model {
   static table = 'diet'
@@ -15,6 +16,7 @@ export default class Diet extends Model {
   @field('fat_g') fatG?: number
   @field('water_ml') waterMl?: number
   @json('supplements', sanitizeSupps) supplements!: string[]
+  @json('items_json', sanitizeItems) itemsJson!: any[]
   
   @readonly @date('created_at') createdAt!: Date
   @readonly @date('updated_at') updatedAt!: Date

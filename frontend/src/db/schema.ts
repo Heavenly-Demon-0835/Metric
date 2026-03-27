@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb'
 
 export default appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'users',
@@ -58,6 +58,33 @@ export default appSchema({
         { name: 'fat_g', type: 'number', isOptional: true },
         { name: 'water_ml', type: 'number', isOptional: true },
         { name: 'supplements', type: 'string', isOptional: true },
+        { name: 'items_json', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ]
+    }),
+    tableSchema({
+      name: 'food_items',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'calories_per_100g', type: 'number' },
+        { name: 'protein_per_100g', type: 'number' },
+        { name: 'carbs_per_100g', type: 'number' },
+        { name: 'fat_per_100g', type: 'number' },
+        { name: 'is_staple', type: 'boolean' },
+        { name: 'meal_context', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ]
+    }),
+    tableSchema({
+      name: 'daily_goals',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'metric_type', type: 'string' },
+        { name: 'target_value', type: 'number' },
+        { name: 'frequency', type: 'string' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ]
