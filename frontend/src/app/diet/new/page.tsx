@@ -21,8 +21,7 @@ export default function NewDietEntry() {
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
 
-  // Supplements & Hydration
-  const [water, setWater] = useState("");
+  // Supplements
   const [supplements, setSupplements] = useState<string[]>([]);
   const [newSupplement, setNewSupplement] = useState("");
 
@@ -47,7 +46,7 @@ export default function NewDietEntry() {
       if (protein) payload.protein_g = parseFloat(protein);
       if (carbs) payload.carbs_g = parseFloat(carbs);
       if (fat) payload.fat_g = parseFloat(fat);
-      if (water) payload.water_ml = parseInt(water);
+
       if (supplements.length > 0) payload.supplements = supplements;
 
       const res = await fetch(`${API_BASE}/diet/`, {
@@ -155,19 +154,8 @@ export default function NewDietEntry() {
 
         <div className="h-px bg-border w-full my-4" />
 
-        {/* Hydration & Supps */}
+        {/* Supplements */}
         <section className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="diet-water" className="text-sm font-bold ml-1">Water Intake (ml)</label>
-            <Input 
-              id="diet-water"
-              type="number" 
-              step="100"
-              placeholder="e.g. 500" 
-              value={water}
-              onChange={(e) => setWater(e.target.value)}
-            />
-          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-bold ml-1">Supplements</label>

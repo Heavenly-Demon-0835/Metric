@@ -54,5 +54,11 @@ class DietLog(BaseModel):
     protein_g: Optional[float] = None
     carbs_g: Optional[float] = None
     fat_g: Optional[float] = None
-    water_ml: Optional[int] = None
     supplements: List[str] = []
+
+
+class WaterLog(BaseModel):
+    user_id: str = ""
+    date: datetime = Field(default_factory=datetime.utcnow)
+    amount_ml: int = 0
+

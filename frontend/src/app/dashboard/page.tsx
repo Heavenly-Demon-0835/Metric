@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, Dumbbell, Calendar, Apple, Moon } from "lucide-react";
+import { Activity, Dumbbell, Calendar, Apple, Moon, Droplets } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
@@ -76,39 +76,12 @@ export default function Dashboard() {
               </div>
               <span className="font-bold text-sm">Log Cardio</span>
             </Link>
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-lg font-bold">Today's Summary</h2>
-            <Link href="/diary" className="text-primary text-sm font-bold flex items-center">
-              Calendar Diary <Calendar size={16} className="ml-1" />
+            <Link href="/water" className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform col-span-2">
+              <div className="h-12 w-12 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center">
+                <Droplets size={24} />
+              </div>
+              <span className="font-bold text-sm">Water Intake</span>
             </Link>
-          </div>
-          
-          <div className="bg-card rounded-3xl shadow-sm border p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-10 rounded-full bg-primary" />
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground">Workout</p>
-                  <p className="font-extrabold">-</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-border w-full" />
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-10 rounded-full bg-[hsl(142,71%,45%)]" />
-                <div>
-                  <p className="text-sm font-bold text-muted-foreground">Calories</p>
-                  <p className="font-extrabold">0 / 2500 kcal</p>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
       </div>

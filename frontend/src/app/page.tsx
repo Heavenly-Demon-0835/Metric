@@ -1,7 +1,21 @@
-import Link from 'next/link';
-import { Activity } from 'lucide-react';
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Activity } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
+
+  // Persistent login: if token exists, skip to dashboard
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center p-6 space-y-8 text-center h-full">
       <div className="flex flex-col items-center gap-4 mt-auto">

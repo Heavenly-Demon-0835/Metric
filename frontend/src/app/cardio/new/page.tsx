@@ -32,6 +32,7 @@ export default function NewCardio() {
   const [currentPos, setCurrentPos] = useState<[number, number] | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [gpsDistance, setGpsDistance] = useState(0);
+  const [locationDenied, setLocationDenied] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -55,6 +56,7 @@ export default function NewCardio() {
       return;
     }
     setError("");
+    setLocationDenied(false);
     setIsTracking(true);
     setCoords([]);
     setGpsDistance(0);
@@ -128,13 +130,20 @@ export default function NewCardio() {
 
   // Get initial position for map centering
   useEffect(() => {
-    if (activeTab === "gps" && !currentPos) {
+    if (activeTab === "gps" && !currentPos && !locationDenied) {
       navigator.geolocation?.getCurrentPosition(
         (pos) => setCurrentPos([pos.coords.latitude, pos.coords.longitude]),
-        () => {} // Silently ignore
+        (err) => {
+          if (err.code === 1) {
+            setLocationDenied(true);
+          } else {
+            setError(`Could not get location: ${err.message}`);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     }
-  }, [activeTab, currentPos]);
+  }, [activeTab, currentPos, locationDenied]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -269,6 +278,18 @@ export default function NewCardio() {
             <div className="rounded-[2rem] overflow-hidden border shadow-sm mb-6 min-h-[300px] bg-background relative">
               {currentPos ? (
                 <LeafletMap center={currentPos} coords={coords} />
+              ) : locationDenied ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center px-6">
+                    <Navigation size={40} className="mx-auto mb-4 text-red-400" />
+                    <p className="font-extrabold text-foreground text-lg mb-2">Location is Off</p>
+                    <p className="text-sm mb-4">Please enable your device&apos;s location services to use GPS tracking.</p>
+                    <button
+                      onClick={() => { setLocationDenied(false); setCurrentPos(null); }}
+                      className="bg-primary text-primary-foreground font-bold text-sm px-6 py-3 rounded-xl"
+                    >Try Again</button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
