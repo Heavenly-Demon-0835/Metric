@@ -85,3 +85,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         
     # Return user dict (could parse into Pydantic model)
     return user
+
+users_router = APIRouter(prefix="/users", tags=["users"])
+
+@users_router.get("/me")
+async def get_profile(user=Depends(get_current_user)):
+    user_out = {k: v for k, v in user.items() if k != "hashed_password"}
+    user_out["_id"] = str(user_out["_id"])
+    return user_out

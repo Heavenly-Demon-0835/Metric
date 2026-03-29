@@ -2,13 +2,7 @@ import { Database } from '@nozbe/watermelondb'
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs'
 
 import schema from './schema'
-import User from './models/User'
-import Workout from './models/Workout'
-import Cardio from './models/Cardio'
-import Sleep from './models/Sleep'
-import Diet from './models/Diet'
-import FoodItem from './models/FoodItem'
-import DailyGoal from './models/DailyGoal'
+import { User, Workout, Cardio, Sleep, Diet, FoodItem, DailyGoal } from './models'
 
 let database: Database | null = null
 
