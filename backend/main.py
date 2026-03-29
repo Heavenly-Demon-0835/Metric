@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, workouts, cardio, sleep, diet, user, sync, water, food_library, goals
+from routers import auth, workouts, cardio, sleep, diet, user, sync, water, food_library, goals, discovery
 
 load_dotenv()
 
@@ -30,6 +30,7 @@ app.include_router(sync.router)
 app.include_router(water.router)
 app.include_router(food_library.router)
 app.include_router(goals.router)
+app.include_router(discovery.router)
 
 
 @app.get("/")

@@ -45,6 +45,9 @@ export default function NewDietEntry() {
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Global search state
+  const [isGlobalSearch, setIsGlobalSearch] = useState(false);
+
   // AddFoodDialog state
   const [showAddFood, setShowAddFood] = useState(false);
 
@@ -85,15 +88,15 @@ export default function NewDietEntry() {
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `${API_BASE}/food-library/search?q=${encodeURIComponent(searchQuery)}`,
-          { headers: getAuthHeaders() }
-        );
+        const endpoint = isGlobalSearch
+          ? `${API_BASE}/discovery/food?q=${encodeURIComponent(searchQuery)}`
+          : `${API_BASE}/food-library/search?q=${encodeURIComponent(searchQuery)}`;
+        const res = await fetch(endpoint, { headers: getAuthHeaders() });
         if (res.ok) setSearchResults(await res.json());
       } catch {}
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, isGlobalSearch]);
 
   // Click outside to close search results
   useEffect(() => {
@@ -119,7 +122,7 @@ export default function NewDietEntry() {
     );
   }, [items]);
 
-  const selectFood = (food: FoodItemData) => {
+  const selectFood = (food: any) => {
     const macros = calculateMacros(food, 100);
     setItems((prev) => [
       ...prev,
@@ -127,6 +130,31 @@ export default function NewDietEntry() {
     ]);
     setSearchQuery("");
     setShowResults(false);
+  };
+
+  const importAndSelectFood = async (food: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const payload = {
+        name: food.name,
+        calories_per_100g: food.calories_per_100g,
+        protein_per_100g: food.protein_per_100g,
+        carbs_per_100g: food.carbs_per_100g,
+        fat_per_100g: food.fat_per_100g,
+        is_staple: false,
+      };
+      const res = await fetch(`${API_BASE}/food-library/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok || res.status === 409) {
+        // Even if 409 (duplicate), we can just select the food directly
+        selectFood(food);
+      }
+    } catch {
+      selectFood(food); // Fallback to just using it without saving if network issues
+    }
   };
 
   const updateItemWeight = (index: number, expr: string) => {
@@ -308,22 +336,39 @@ export default function NewDietEntry() {
                     setShowResults(true);
                   }}
                   onFocus={() => setShowResults(true)}
-                  className="pl-11 h-14 text-base"
+                  className="pl-11 pr-24 h-14 text-base"
                 />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <div className="h-6 w-px bg-border" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGlobalSearch(!isGlobalSearch);
+                      setSearchResults([]);
+                    }}
+                    className={`text-xs font-bold px-2 py-1.5 rounded-lg transition-colors ${
+                      isGlobalSearch
+                        ? "bg-primary/20 text-primary"
+                        : "text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    Global
+                  </button>
+                </div>
               </div>
 
               {/* Search Results Dropdown */}
               {showResults && searchResults.length > 0 && (
                 <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border rounded-2xl shadow-xl max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2">
-                  {searchResults.map((food) => (
+                  {searchResults.map((food: any) => (
                     <button
-                      key={food._id}
+                      key={food.id || food._id}
                       type="button"
-                      onClick={() => selectFood(food)}
+                      onClick={() => !isGlobalSearch && selectFood(food)}
                       className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/50 transition-colors text-left border-b last:border-b-0"
                     >
-                      <div>
-                        <p className="font-bold text-sm">{food.name}</p>
+                      <div className="flex-1 min-w-0 pr-3">
+                        <p className="font-bold text-sm truncate">{food.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {food.calories_per_100g} kcal · {food.protein_per_100g}
                           g P · {food.carbs_per_100g}g C · {food.fat_per_100g}g F
@@ -332,8 +377,22 @@ export default function NewDietEntry() {
                             / 100g
                           </span>
                         </p>
+                        {isGlobalSearch && food.brand && (
+                          <span className="text-[10px] uppercase font-bold text-primary mt-1 inline-block bg-primary/10 px-1.5 py-0.5 rounded">
+                            {food.brand}
+                          </span>
+                        )}
                       </div>
-                      <Plus size={18} className="text-primary shrink-0" />
+                      {isGlobalSearch ? (
+                        <div
+                          onClick={(e) => importAndSelectFood(food, e)}
+                          className="bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                        >
+                          Import
+                        </div>
+                      ) : (
+                        <Plus size={18} className="text-primary shrink-0" />
+                      )}
                     </button>
                   ))}
                 </div>

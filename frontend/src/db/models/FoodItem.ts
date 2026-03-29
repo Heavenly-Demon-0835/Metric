@@ -10,7 +10,7 @@ export default class FoodItem extends Model {
   @field('protein_per_100g') proteinPer100g!: number
   @field('carbs_per_100g') carbsPer100g!: number
   @field('fat_per_100g') fatPer100g!: number
-  @field('is_staple') isStagle!: boolean
+  @field('is_staple') isStaple!: boolean
   @field('meal_context') mealContext?: string
 
   @readonly @date('created_at') createdAt!: Date

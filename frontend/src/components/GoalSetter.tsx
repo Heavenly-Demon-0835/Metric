@@ -39,6 +39,24 @@ export default function GoalSetter({ onCreated }: GoalSetterProps) {
         }),
       });
       if (res.ok) {
+        try {
+          const insertedId = await res.json();
+          const { database } = await import("@/db");
+          if (database) {
+            await database.write(async () => {
+              await database.get("daily_goals").create((record: any) => {
+                record._raw.id = insertedId;
+                record.metricType = selected;
+                record.targetValue = parseFloat(targetValue);
+                record.frequency = "daily";
+                record.userId = "auth-user";
+              });
+            });
+          }
+        } catch (err) {
+          console.error("Local DB insert skipped:", err);
+        }
+
         onCreated();
         setOpen(false);
         setSelected(null);

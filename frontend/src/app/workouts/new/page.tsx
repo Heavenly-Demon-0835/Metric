@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Search, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { useEffect, useRef } from "react";
 
 type SetRecord = {
   id: string;
@@ -27,6 +28,46 @@ export default function NewWorkout() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Search state
+  const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
+  const [isGlobalSearch, setIsGlobalSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search effect
+  useEffect(() => {
+    if (activeSearchIndex === null) {
+      setSearchResults([]);
+      return;
+    }
+    const query = exercises[activeSearchIndex]?.name || "";
+    if (query.trim().length < 2 || !isGlobalSearch) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/discovery/exercise?q=${encodeURIComponent(query)}`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) setSearchResults(await res.json());
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [exercises, activeSearchIndex, isGlobalSearch]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setActiveSearchIndex(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const addExercise = () => {
     setExercises([...exercises, { 
@@ -143,12 +184,54 @@ export default function NewWorkout() {
               )}
             </div>
             
-            <Input 
-              placeholder="e.g. Barbell Squat" 
-              value={exercise.name}
-              onChange={(e) => updateExerciseName(exercise.id, e.target.value)}
-              className="mb-4 font-bold"
-            />
+            <div className="relative mb-4" ref={activeSearchIndex === index ? dropdownRef : null}>
+              <div className="relative">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  placeholder="e.g. Barbell Squat" 
+                  value={exercise.name}
+                  onChange={(e) => updateExerciseName(exercise.id, e.target.value)}
+                  onFocus={() => setActiveSearchIndex(index)}
+                  className="pl-11 pr-24 font-bold"
+                  autoComplete="off"
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <div className="h-6 w-px bg-border(100)" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGlobalSearch(!isGlobalSearch);
+                      setSearchResults([]);
+                    }}
+                    className={`text-[10px] sm:text-xs font-bold px-2 py-1.5 rounded-lg transition-colors ${
+                      isGlobalSearch ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    Global
+                  </button>
+                </div>
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {activeSearchIndex === index && searchResults.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-card border rounded-2xl shadow-xl max-h-48 overflow-y-auto animate-in fade-in">
+                  {searchResults.map((result) => (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onClick={() => {
+                        updateExerciseName(exercise.id, result.name);
+                        setActiveSearchIndex(null);
+                      }}
+                      className="w-full px-4 py-2.5 flex flex-col items-start hover:bg-secondary/50 transition-colors border-b last:border-b-0"
+                    >
+                      <span className="font-bold text-sm text-left truncate w-full">{result.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{result.category}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="space-y-3">
               <div className="flex px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">

@@ -74,6 +74,28 @@ export default function AddFoodDialog({
       if (!res.ok) throw new Error("Failed to save food item");
 
       const insertedId = await res.json();
+      
+      try {
+        const { database } = await import("@/db");
+        if (database) {
+          await database.write(async () => {
+            await database.get("food_items").create((record: any) => {
+              record._raw.id = insertedId;
+              record.name = payload.name;
+              record.caloriesPer100g = payload.calories_per_100g;
+              record.proteinPer100g = payload.protein_per_100g;
+              record.carbsPer100g = payload.carbs_per_100g;
+              record.fatPer100g = payload.fat_per_100g;
+              record.isStaple = payload.is_staple;
+              record.mealContext = payload.meal_context || undefined;
+              record.userId = "auth-user"; // Sync will properly update this on next pull
+            });
+          });
+        }
+      } catch (err) {
+        console.error("Local DB insert skipped:", err);
+      }
+
       onCreated({ ...payload, _id: insertedId });
       onClose();
     } catch (err: any) {
@@ -238,13 +260,15 @@ export default function AddFoodDialog({
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full h-14 text-lg shadow-xl shadow-primary/20 mt-4"
-              disabled={saving || !name.trim() || !calories}
-            >
-              {saving ? "Saving..." : "Add to Library"}
-            </Button>
+            <div className="sticky bottom-[-1px] bg-background pt-3 pb-2 mt-6 z-10 border-t border-border/40">
+              <Button
+                type="submit"
+                className="w-full h-14 text-lg shadow-xl shadow-primary/20"
+                disabled={saving || !name.trim() || !calories}
+              >
+                {saving ? "Saving..." : "Add to Library"}
+              </Button>
+            </div>
           </form>
         </div>
       </div>
