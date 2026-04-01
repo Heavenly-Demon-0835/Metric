@@ -16,6 +16,7 @@ class User(BaseModel):
 
 class WorkoutSet(BaseModel):
     reps: int
+    weight: Optional[float] = None
     effort: str  # "Near Failure", "Failure", "Reps in Reserve"
 
 

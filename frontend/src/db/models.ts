@@ -83,3 +83,12 @@ export class DailyGoal extends Model {
   @readonly @date('created_at') createdAt!: Date
   @readonly @date('updated_at') updatedAt!: Date
 }
+
+export class WaterLog extends Model {
+  static table = 'water_logs'
+  @field('user_id') userId!: string
+  @date('date') date!: Date
+  @field('amount_ml') amountMl!: number
+  @readonly @date('created_at') createdAt!: Date
+  @readonly @date('updated_at') updatedAt!: Date
+}

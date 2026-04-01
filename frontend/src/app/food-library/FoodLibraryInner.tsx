@@ -11,6 +11,7 @@ import { database } from "@/db";
 export default function FoodLibraryInner() {
   const [foods, setFoods] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -20,8 +21,13 @@ export default function FoodLibraryInner() {
     return () => sub.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const filtered = foods.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
+    f.name.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   const toggleStaple = async (food: any) => {
@@ -202,12 +208,14 @@ export default function FoodLibraryInner() {
         )}
       </div>
 
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-6 right-6 max-w-md mx-auto w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center active:scale-90 transition-transform z-30 hover:shadow-2xl"
-      >
-        <Plus size={24} />
-      </button>
+      <div className="sticky bottom-6 flex justify-end px-6 z-30 pointer-events-none mt-auto">
+        <button
+          onClick={() => setShowAdd(true)}
+          className="w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-xl shadow-primary/30 flex items-center justify-center active:scale-90 transition-transform hover:shadow-2xl pointer-events-auto"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
 
       <AddFoodDialog open={showAdd} onClose={() => setShowAdd(false)} onCreated={() => {}} />
     </main>

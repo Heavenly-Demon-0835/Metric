@@ -1,44 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Droplets, Plus, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { database } from "@/db";
 
 const PRESETS = [100, 250, 500, 750, 1000];
 
-interface WaterEntry {
-  _id: string;
-  amount_ml: number;
-  date: string;
-}
-
 export default function WaterIntake() {
-  const [todayEntries, setTodayEntries] = useState<WaterEntry[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [customAmount, setCustomAmount] = useState("");
   const [error, setError] = useState("");
 
-  const fetchEntries = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/water/`, { headers: getAuthHeaders() });
-      if (res.ok) {
-        const all: WaterEntry[] = await res.json();
-        const today = new Date();
-        const todayOnly = all.filter((e) => {
-          const d = new Date(e.date);
-          return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
-        });
-        setTodayEntries(todayOnly);
-      }
-    } catch {}
+  // Subscribe to WatermelonDB water_logs for real-time reactivity
+  useEffect(() => {
+    if (!database) return;
+    const sub = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
+    return () => sub.unsubscribe();
   }, []);
 
-  useEffect(() => { fetchEntries(); }, [fetchEntries]);
+  // Filter today's entries reactively
+  const todayEntries = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return waterLogs.filter((e) => {
+      const d = new Date(e.date);
+      return d >= today;
+    });
+  }, [waterLogs]);
 
-  const totalMl = todayEntries.reduce((sum, e) => sum + e.amount_ml, 0);
+  const totalMl = useMemo(() => todayEntries.reduce((sum, e) => sum + (e.amountMl || 0), 0), [todayEntries]);
   const goalMl = 3000;
   const progress = Math.min((totalMl / goalMl) * 100, 100);
 
@@ -52,9 +47,27 @@ export default function WaterIntake() {
         body: JSON.stringify({ amount_ml: ml }),
       });
       if (!res.ok) throw new Error("Failed to log water");
+
+      const insertedId = await res.json();
+
+      // Write to local WatermelonDB for instant reactivity
+      try {
+        if (database) {
+          await database.write(async () => {
+            await database!.get("water_logs").create((record: any) => {
+              record._raw.id = insertedId;
+              record.userId = "auth-user";
+              record.amountMl = ml;
+              record.date = new Date();
+            });
+          });
+        }
+      } catch (err) {
+        console.error("Local DB insert skipped:", err);
+      }
+
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 2000);
-      await fetchEntries();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -62,11 +75,19 @@ export default function WaterIntake() {
     }
   };
 
-  const deleteEntry = async (id: string) => {
+  const deleteEntry = async (entry: any) => {
     try {
-      await fetch(`${API_BASE}/water/${id}`, { method: "DELETE", headers: getAuthHeaders() });
-      await fetchEntries();
-    } catch {}
+      // Delete from API
+      await fetch(`${API_BASE}/water/${entry.id}`, { method: "DELETE", headers: getAuthHeaders() });
+      // Delete from local DB
+      if (database) {
+        await database.write(async () => {
+          await entry.markAsDeleted();
+        });
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
   };
 
   return (
@@ -151,16 +172,16 @@ export default function WaterIntake() {
           <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-3 ml-1">Today&apos;s Log</h2>
           <div className="space-y-2">
             {todayEntries.map((entry) => (
-              <div key={entry._id} className="flex items-center justify-between bg-background border rounded-2xl p-3 px-4">
+              <div key={entry.id} className="flex items-center justify-between bg-background border rounded-2xl p-3 px-4">
                 <div className="flex items-center gap-3">
                   <Droplets size={18} className="text-sky-500" />
-                  <span className="font-bold">{entry.amount_ml} ml</span>
+                  <span className="font-bold">{entry.amountMl} ml</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground">
                     {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <button onClick={() => deleteEntry(entry._id)} className="text-muted-foreground hover:text-red-500 p-1">
+                  <button onClick={() => deleteEntry(entry)} className="text-muted-foreground hover:text-red-500 p-1">
                     <Trash2 size={16} />
                   </button>
                 </div>

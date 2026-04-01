@@ -12,6 +12,7 @@ import { useEffect, useRef } from "react";
 type SetRecord = {
   id: string;
   reps: string;
+  weight: string;
   effort: string;
 };
 
@@ -24,7 +25,7 @@ type ExerciseLog = {
 export default function NewWorkout() {
   const router = useRouter();
   const [exercises, setExercises] = useState<ExerciseLog[]>([
-    { id: "1", name: "", sets: [{ id: "1-1", reps: "", effort: "Reps in Reserve" }] }
+    { id: "1", name: "", sets: [{ id: "1-1", reps: "", weight: "", effort: "Reps in Reserve" }] }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -73,7 +74,7 @@ export default function NewWorkout() {
     setExercises([...exercises, { 
       id: Date.now().toString(), 
       name: "", 
-      sets: [{ id: Date.now().toString() + "-1", reps: "", effort: "Reps in Reserve" }] 
+      sets: [{ id: Date.now().toString() + "-1", reps: "", weight: "", effort: "Reps in Reserve" }] 
     }]);
   };
 
@@ -82,7 +83,7 @@ export default function NewWorkout() {
       if (ex.id === exerciseId) {
         return {
           ...ex,
-          sets: [...ex.sets, { id: Date.now().toString(), reps: "", effort: "Reps in Reserve" }]
+          sets: [...ex.sets, { id: Date.now().toString(), reps: "", weight: "", effort: "Reps in Reserve" }]
         };
       }
       return ex;
@@ -136,6 +137,7 @@ export default function NewWorkout() {
           name: ex.name,
           sets: ex.sets.filter(s => s.reps).map(s => ({
             reps: parseInt(s.reps) || 0,
+            weight: s.weight ? parseFloat(s.weight) : null,
             effort: s.effort
           }))
         }))
@@ -236,8 +238,9 @@ export default function NewWorkout() {
             <div className="space-y-3">
               <div className="flex px-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 <div className="w-12 text-center">Set</div>
-                <div className="w-20 text-center">Reps</div>
-                <div className="flex-1 px-4">Effort</div>
+                <div className="w-16 text-center">kg</div>
+                <div className="w-16 text-center">Reps</div>
+                <div className="flex-1 px-4 text-center">Effort</div>
                 <div className="w-8"></div>
               </div>
 
@@ -248,15 +251,23 @@ export default function NewWorkout() {
                   </div>
                   <Input 
                     type="number"
+                    step="0.5"
+                    value={set.weight}
+                    onChange={(e) => updateSet(exercise.id, set.id, "weight", e.target.value)}
+                    className="w-16 h-12 text-center font-bold px-1"
+                    placeholder="-"
+                  />
+                  <Input 
+                    type="number"
                     value={set.reps}
                     onChange={(e) => updateSet(exercise.id, set.id, "reps", e.target.value)}
-                    className="w-20 h-12 text-center text-lg font-bold"
+                    className="w-16 h-12 text-center text-lg font-bold px-1"
                     placeholder="0"
                   />
                   <select 
                     value={set.effort}
                     onChange={(e) => updateSet(exercise.id, set.id, "effort", e.target.value)}
-                    className="flex-1 h-12 rounded-2xl border border-input bg-background/50 px-3 text-sm font-semibold truncate ring-offset-background outline-none focus:ring-2 focus:ring-ring"
+                    className="flex-1 h-12 rounded-2xl border border-input bg-background/50 px-2 text-sm font-semibold truncate ring-offset-background outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="Reps in Reserve">Reps in Reserve</option>
                     <option value="Near Failure">Near Failure</option>
@@ -300,7 +311,7 @@ export default function NewWorkout() {
         </Button>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-background/80 backdrop-blur-md border-t max-w-md mx-auto">
+      <div className="sticky bottom-0 left-0 right-0 p-6 bg-background/80 backdrop-blur-md border-t max-w-md mx-auto z-10 pt-4 pb-4">
         <Button onClick={handleSave} className="w-full h-14 text-lg shadow-xl shadow-primary/20" disabled={isLoading}>
           {isLoading ? "Saving..." : "Save Workout"}
         </Button>

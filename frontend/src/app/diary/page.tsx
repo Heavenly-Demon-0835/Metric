@@ -356,7 +356,7 @@ export default function Diary() {
                       {ex.sets?.map((s: any, j: number) => (
                         <div key={j} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
                           <span className="text-muted-foreground">Set {j+1}</span>
-                          <span className="font-bold">{s.reps} reps — {s.effort}</span>
+                          <span className="font-bold">{s.weight ? `${s.weight}kg × ` : ''}{s.reps} reps — {s.effort}</span>
                         </div>
                       ))}
                     </div>

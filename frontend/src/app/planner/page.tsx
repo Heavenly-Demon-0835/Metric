@@ -1,28 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Target, Trash2, CheckCircle2, Circle, Plus, X } from "lucide-react";
+import { Target, Trash2, CheckCircle2, Circle, Plus, X } from "lucide-react";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
 import ProgressRing from "@/components/ProgressRing";
 import GoalSetter from "@/components/GoalSetter";
 import { HamburgerButton } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
-
-interface Goal {
-  _id: string;
-  metric_type: string;
-  target_value: number;
-  frequency: string;
-}
-
-interface LiveProgress {
-  calories: number;
-  protein: number;
-  water: number;
-  workouts: number;
-}
+import { database } from "@/db";
 
 interface ChecklistItem {
   id: string;
@@ -45,13 +32,42 @@ const DEFAULT_STANDARDS = [
 
 export default function PlannerPage() {
   const router = useRouter();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [progress, setProgress] = useState<LiveProgress>({ calories: 0, protein: 0, water: 0, workouts: 0 });
+
+  // WatermelonDB reactive state
+  const [goals, setGoals] = useState<any[]>([]);
+  const [diets, setDiets] = useState<any[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
+  const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Daily checklist — persisted in localStorage
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newItem, setNewItem] = useState("");
+
+  // Auth check
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) { router.replace("/auth/login"); return; }
+  }, [router]);
+
+  // Subscribe to WatermelonDB observables for real-time reactivity
+  useEffect(() => {
+    if (!database) { setLoading(false); return; }
+
+    const subG = database.collections.get("daily_goals").query().observe().subscribe(setGoals);
+    const subD = database.collections.get("diet").query().observe().subscribe(setDiets);
+    const subW = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
+    const subWk = database.collections.get("workouts").query().observe().subscribe(setWorkouts);
+
+    setLoading(false);
+
+    return () => {
+      subG.unsubscribe();
+      subD.unsubscribe();
+      subW.unsubscribe();
+      subWk.unsubscribe();
+    };
+  }, []);
 
   // Load checklist from localStorage
   useEffect(() => {
@@ -72,54 +88,47 @@ export default function PlannerPage() {
     }
   }, [checklist]);
 
-  const fetchAll = async () => {
-    try {
-      const headers = getAuthHeaders();
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      if (!token) { router.replace("/auth/login"); return; }
+  // Compute today's progress reactively from observed WatermelonDB data
+  const progress = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    let cal = 0, prot = 0, wat = 0, wrk = 0;
 
-      const [goalsRes, dietRes, waterRes, workoutRes] = await Promise.all([
-        fetch(`${API_BASE}/goals/`, { headers }),
-        fetch(`${API_BASE}/diet/`, { headers }),
-        fetch(`${API_BASE}/water/`, { headers }),
-        fetch(`${API_BASE}/workouts/`, { headers }),
-      ]);
-
-      if (goalsRes.ok) setGoals(await goalsRes.json());
-
-      let cal = 0, prot = 0, wat = 0, wrk = 0;
-      if (dietRes.ok) {
-        for (const d of await dietRes.json()) {
-          if (new Date(d.date) >= today) { cal += d.calories || 0; prot += d.protein_g || 0; }
-        }
+    for (const d of diets) {
+      if (new Date(d.date) >= today) {
+        cal += d.calories || 0;
+        prot += d.proteinG || 0;
       }
-      if (waterRes.ok) {
-        for (const w of await waterRes.json()) {
-          if (new Date(w.date) >= today) wat += w.amount_ml || 0;
-        }
-      }
-      if (workoutRes.ok) {
-        for (const w of await workoutRes.json()) {
-          if (new Date(w.date) >= today) wrk++;
-        }
-      }
-
-      setProgress({ calories: cal, protein: prot, water: wat, workouts: wrk });
-    } catch (err) {
-      console.error("[Planner] Load failed:", err);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  useEffect(() => { fetchAll(); }, []);
+    for (const w of waterLogs) {
+      if (new Date(w.date) >= today) {
+        wat += w.amountMl || 0;
+      }
+    }
+
+    for (const w of workouts) {
+      if (new Date(w.date) >= today) wrk++;
+    }
+
+    return { calories: cal, protein: prot, water: wat, workouts: wrk };
+  }, [diets, waterLogs, workouts]);
 
   const deleteGoal = async (id: string) => {
+    // Delete from API
     await fetch(`${API_BASE}/goals/${id}`, { method: "DELETE", headers: getAuthHeaders() }).catch(() => {});
-    setGoals((prev) => prev.filter((g) => g._id !== id));
+    // Delete from local DB
+    try {
+      if (database) {
+        await database.write(async () => {
+          const record = await database!.get("daily_goals").find(id);
+          await record.markAsDeleted();
+        });
+      }
+    } catch (err) {
+      console.error("Local delete failed:", err);
+    }
   };
 
   const toggleCheck = (id: string) => {
@@ -145,6 +154,9 @@ export default function PlannerPage() {
       default: return 0;
     }
   };
+
+  // Refresh callback for GoalSetter — no-op since we're reactive now
+  const onGoalCreated = () => {};
 
   return (
     <main className="flex flex-col min-h-screen pb-8">
@@ -181,15 +193,15 @@ export default function PlannerPage() {
                   Metric Targets
                 </h2>
                 {goals.map((goal) => {
-                  const meta = GOAL_META[goal.metric_type];
+                  const meta = GOAL_META[goal.metricType];
                   if (!meta) return null;
-                  const cur = getProgress(goal.metric_type);
-                  const pct = Math.min((cur / (goal.target_value || 1)) * 100, 100);
+                  const cur = getProgress(goal.metricType);
+                  const pct = Math.min((cur / (goal.targetValue || 1)) * 100, 100);
                   const done = pct >= 100;
 
                   return (
-                    <div key={goal._id} className={`bg-card border rounded-2xl p-4 flex items-center gap-4 ${done ? "border-green-500/30" : ""}`}>
-                      <ProgressRing current={cur} target={goal.target_value} color={done ? "hsl(142,71%,45%)" : meta.color} label="" size={56} strokeWidth={5} />
+                    <div key={goal.id} className={`bg-card border rounded-2xl p-4 flex items-center gap-4 ${done ? "border-green-500/30" : ""}`}>
+                      <ProgressRing current={cur} target={goal.targetValue} color={done ? "hsl(142,71%,45%)" : meta.color} label="" size={56} strokeWidth={5} />
                       <div className="flex-1 min-w-0">
                         <Link href={meta.link}>
                           <p className="font-bold text-sm flex items-center gap-1.5">
@@ -197,12 +209,12 @@ export default function PlannerPage() {
                             {done && <span className="text-green-500 text-xs">✓</span>}
                           </p>
                         </Link>
-                        <p className="text-xs text-muted-foreground">{Math.round(cur)} / {goal.target_value} {meta.unit}</p>
+                        <p className="text-xs text-muted-foreground">{Math.round(cur)} / {goal.targetValue} {meta.unit}</p>
                         <div className="h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: done ? "hsl(142,71%,45%)" : meta.color }} />
                         </div>
                       </div>
-                      <button onClick={() => deleteGoal(goal._id)} className="p-2 hover:bg-red-100 text-red-400 rounded-lg transition-colors shrink-0">
+                      <button onClick={() => deleteGoal(goal.id)} className="p-2 hover:bg-red-100 text-red-400 rounded-lg transition-colors shrink-0">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -211,7 +223,7 @@ export default function PlannerPage() {
               </section>
             )}
 
-            <GoalSetter onCreated={fetchAll} />
+            <GoalSetter onCreated={onGoalCreated} />
 
             {/* === DAILY STANDARDS CHECKLIST === */}
             <section className="space-y-3">

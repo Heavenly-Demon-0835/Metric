@@ -2,7 +2,7 @@ import { Database } from '@nozbe/watermelondb'
 import LokiJSAdapter from '@nozbe/watermelondb/adapters/lokijs'
 
 import schema from './schema'
-import { User, Workout, Cardio, Sleep, Diet, FoodItem, DailyGoal } from './models'
+import { User, Workout, Cardio, Sleep, Diet, FoodItem, DailyGoal, WaterLog } from './models'
 
 let database: Database | null = null
 
@@ -33,6 +33,7 @@ if (typeof window !== 'undefined') {
       Diet,
       FoodItem,
       DailyGoal,
+      WaterLog,
     ],
   })
 }

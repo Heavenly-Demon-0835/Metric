@@ -13,6 +13,7 @@ export default function PlannerCard() {
   const [goals, setGoals] = useState<any[]>([]);
   const [diets, setDiets] = useState<any[]>([]);
   const [workouts, setWorkouts] = useState<any[]>([]);
+  const [waterLogs, setWaterLogs] = useState<any[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -21,11 +22,13 @@ export default function PlannerCard() {
     const subG = database.collections.get("daily_goals").query().observe().subscribe(setGoals);
     const subD = database.collections.get("diet").query().observe().subscribe(setDiets);
     const subW = database.collections.get("workouts").query().observe().subscribe(setWorkouts);
+    const subWL = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
 
     return () => {
       subG.unsubscribe();
       subD.unsubscribe();
       subW.unsubscribe();
+      subWL.unsubscribe();
     };
   }, []);
 
@@ -52,7 +55,12 @@ export default function PlannerCard() {
     if (new Date(d.date) >= today) {
       currentCal += d.calories || 0;
       currentProt += d.proteinG || 0;
-      currentWater += d.waterMl || 0;
+    }
+  }
+
+  for (const wl of waterLogs) {
+    if (new Date(wl.date) >= today) {
+      currentWater += wl.amountMl || 0;
     }
   }
 
