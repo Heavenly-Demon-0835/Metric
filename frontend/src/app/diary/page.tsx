@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Activity, Apple, Moon, Dumbbell, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { parseAPIDate } from "@/lib/utils";
 
 interface RawEntry {
   _id: string;
@@ -60,13 +61,14 @@ export default function Diary() {
     setIsLoading(true);
     const headers = getAuthHeaders();
     const all: RawEntry[] = [];
+    const monthParam = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
 
     try {
       const [workouts, cardio, sleep, diet] = await Promise.all([
-        fetch(`${API_BASE}/workouts/`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/cardio/`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/sleep/`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/diet/`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE}/workouts/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE}/cardio/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE}/sleep/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE}/diet/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
       ]);
 
       workouts.forEach((w: any) => all.push({ ...w, type: "workout" }));
@@ -77,7 +79,7 @@ export default function Diary() {
 
     setEntries(all);
     setIsLoading(false);
-  }, []);
+  }, [currentDate]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
@@ -86,14 +88,14 @@ export default function Diary() {
 
   const activeDays = new Set<number>();
   entries.forEach((e) => {
-    const d = new Date(e.date);
+    const d = parseAPIDate(e.date);
     if (d.getFullYear() === year && d.getMonth() === month) activeDays.add(d.getDate());
   });
 
   // Group entries for selected day by type
   const dayEntries = selectedDay
     ? entries.filter((e) => {
-        const d = new Date(e.date);
+        const d = parseAPIDate(e.date);
         return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedDay;
       })
     : [];
@@ -347,7 +349,7 @@ export default function Diary() {
                 /* --- VIEW MODE --- */
                 <>
                   <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                    {new Date(detailEntry.date).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {parseAPIDate(detailEntry.date).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
 
                   {detailEntry.type === "workout" && detailEntry.exercises?.map((ex: any, i: number) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,8 @@ export default function AddFoodDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset form when dialog opens with new initial name
-  useState(() => {
+  // Reset form when dialog opens
+  useEffect(() => {
     if (open) {
       setName(initialName);
       setCalories("");
@@ -42,7 +42,7 @@ export default function AddFoodDialog({
       setMealContext("");
       setError("");
     }
-  });
+  }, [open, initialName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

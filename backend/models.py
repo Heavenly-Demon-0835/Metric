@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
 
@@ -11,7 +11,7 @@ class User(BaseModel):
     weight: Optional[float] = None
     height: Optional[float] = None
     gender: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class WorkoutSet(BaseModel):
@@ -27,13 +27,13 @@ class ExerciseLog(BaseModel):
 
 class WorkoutSession(BaseModel):
     user_id: str = ""
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     exercises: List[ExerciseLog] = []
 
 
 class CardioSession(BaseModel):
     user_id: str = ""
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     duration_minutes: int = 0
     distance_km: float = 0.0
     activity_type: Optional[str] = None  # "Walking", "Running"
@@ -42,7 +42,7 @@ class CardioSession(BaseModel):
 
 class SleepLog(BaseModel):
     user_id: str = ""
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     duration_hours: float = 0.0
     quality: Optional[str] = None
 
@@ -56,7 +56,7 @@ class FoodItem(BaseModel):
     fat_per_100g: float = 0
     is_staple: bool = False
     meal_context: Optional[str] = None  # "breakfast" | "lunch" | "dinner" | "snack"
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class DailyGoal(BaseModel):
@@ -78,7 +78,7 @@ class DietLogItem(BaseModel):
 
 class DietLog(BaseModel):
     user_id: str = ""
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     meal_name: str = ""
     calories: int = 0
     protein_g: Optional[float] = None
@@ -90,6 +90,6 @@ class DietLog(BaseModel):
 
 class WaterLog(BaseModel):
     user_id: str = ""
-    date: datetime = Field(default_factory=datetime.utcnow)
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     amount_ml: int = 0
 

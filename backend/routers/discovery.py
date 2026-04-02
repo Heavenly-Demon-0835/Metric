@@ -1,15 +1,22 @@
 import httpx
 import asyncio
+import os
 from fastapi import APIRouter, Depends, Query
 from routers.auth import get_current_user
 
 router = APIRouter(prefix="/discovery", tags=["discovery"])
 
+# USDA FoodData Central API Key
+# Get a free key at: https://fdc.nal.usda.gov/api-key-signup.html
+# Then set USDA_API_KEY in your .env file.
+# The DEMO_KEY works but has aggressive rate limits (30 req/hour).
+USDA_API_KEY = os.getenv("USDA_API_KEY", "DEMO_KEY")
+
 @router.get("/food")
 async def search_food(q: str = Query(..., min_length=2), user=Depends(get_current_user)):
     # Run USDA and Open Food Facts in parallel
     async with httpx.AsyncClient() as client:
-        usda_url = f"https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query={q}"
+        usda_url = f"https://api.nal.usda.gov/fdc/v1/foods/search?api_key={USDA_API_KEY}&query={q}"
         off_url = f"https://world.openfoodfacts.org/api/v2/search?search_terms={q}&fields=id,product_name,brands,nutriments&page_size=10"
         
         usda_task = client.get(usda_url, timeout=5.0)

@@ -36,28 +36,30 @@ export default function NewWorkout() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounce search effect
+  // Derive the active search query separately to avoid depending on full exercises array
+  const activeSearchQuery = activeSearchIndex !== null ? exercises[activeSearchIndex]?.name || "" : "";
+
+  // Debounce search effect — depends only on the query string, not the array
   useEffect(() => {
     if (activeSearchIndex === null) {
       setSearchResults([]);
       return;
     }
-    const query = exercises[activeSearchIndex]?.name || "";
-    if (query.trim().length < 2 || !isGlobalSearch) {
+    if (activeSearchQuery.trim().length < 2 || !isGlobalSearch) {
       setSearchResults([]);
       return;
     }
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_BASE}/discovery/exercise?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`${API_BASE}/discovery/exercise?q=${encodeURIComponent(activeSearchQuery)}`, {
           headers: getAuthHeaders()
         });
         if (res.ok) setSearchResults(await res.json());
       } catch {}
     }, 300);
     return () => clearTimeout(timer);
-  }, [exercises, activeSearchIndex, isGlobalSearch]);
+  }, [activeSearchQuery, activeSearchIndex, isGlobalSearch]);
 
   // Click outside to close dropdown
   useEffect(() => {
