@@ -33,12 +33,11 @@ export default function PlannerCard() {
   }, []);
 
   if (!isMounted || !database) return (
-    <div className="bg-card rounded-3xl border p-6 animate-pulse">
-      <div className="h-28 bg-secondary rounded-2xl" />
+    <div className="bg-secondary/30 rounded-2xl p-6 animate-pulse">
+      <div className="h-20 bg-secondary rounded-xl" />
     </div>
   );
 
-  // Process data locally instead of making API calls
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -70,15 +69,14 @@ export default function PlannerCard() {
     }
   }
 
+
   return (
-    <div className="bg-card rounded-3xl border p-5 shadow-sm">
+    <div className="bg-secondary/30 rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-          <Target size={16} />
-        </div>
-        <h3 className="text-sm font-bold">Today&rsquo;s Progress</h3>
+        <Target size={16} strokeWidth={1.5} className="text-muted-foreground" />
+        <h3 className="text-xs font-medium text-muted-foreground">Today&rsquo;s Progress</h3>
         {workoutCount > 0 && (
-          <span className="ml-auto text-xs font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+          <span className="ml-auto text-[10px] font-medium text-primary bg-primary/8 px-2 py-0.5 rounded-full">
             🏋️ {workoutCount}
           </span>
         )}
@@ -88,7 +86,7 @@ export default function PlannerCard() {
         <ProgressRing
           current={currentCal}
           target={targets.calories}
-          color="hsl(262, 83%, 58%)"
+          color="hsl(255, 100%, 68%)"
           label="Calories"
           unit="kcal"
           onClick={() => router.push("/diet/new")}
@@ -96,7 +94,7 @@ export default function PlannerCard() {
         <ProgressRing
           current={currentProt}
           target={targets.protein}
-          color="hsl(217, 91%, 60%)"
+          color="#10b981"
           label="Protein"
           unit="g"
           onClick={() => router.push("/diet/new")}
@@ -104,7 +102,7 @@ export default function PlannerCard() {
         <ProgressRing
           current={currentWater}
           target={targets.water}
-          color="hsl(199, 89%, 48%)"
+          color="#0ea5e9"
           label="Water"
           unit="ml"
           onClick={() => router.push("/water")}

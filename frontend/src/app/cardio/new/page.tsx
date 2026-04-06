@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
 
-// Dynamically import Leaflet map to avoid SSR issues
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
 const ACTIVITY_TYPES = ["Walking", "Running"] as const;
@@ -22,11 +21,9 @@ export default function NewCardio() {
   const [error, setError] = useState("");
   const [activityType, setActivityType] = useState<ActivityType>("Running");
   
-  // Manual State
   const [duration, setDuration] = useState("");
   const [distance, setDistance] = useState("");
 
-  // GPS State
   const [isTracking, setIsTracking] = useState(false);
   const [coords, setCoords] = useState<[number, number][]>([]);
   const [currentPos, setCurrentPos] = useState<[number, number] | null>(null);
@@ -37,7 +34,6 @@ export default function NewCardio() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  // Haversine distance in km
   const haversine = (a: [number, number], b: [number, number]): number => {
     const R = 6371;
     const dLat = ((b[0] - a[0]) * Math.PI) / 180;
@@ -77,7 +73,6 @@ export default function NewCardio() {
           if (prev.length > 0) {
             const d = haversine(prev[prev.length - 1], newPt);
             if (d > 0.003) {
-              // Only add point if moved > 3m (noise filter)
               setGpsDistance((old) => old + d);
               return [...prev, newPt];
             }
@@ -98,7 +93,6 @@ export default function NewCardio() {
     timerRef.current = null;
     setIsTracking(false);
 
-    // Auto-save
     setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/cardio/`, {
@@ -120,7 +114,6 @@ export default function NewCardio() {
     }
   }, [elapsedSec, gpsDistance, coords, activityType, router]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -128,7 +121,6 @@ export default function NewCardio() {
     };
   }, []);
 
-  // Get initial position for map centering
   useEffect(() => {
     if (activeTab === "gps" && !currentPos && !locationDenied) {
       navigator.geolocation?.getCurrentPosition(
@@ -176,67 +168,66 @@ export default function NewCardio() {
   };
 
   return (
-    <main className="flex flex-col min-h-screen bg-secondary/30 pb-24">
-      <header className="flex items-center justify-between p-6 pb-4 border-b">
-        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={24} />
+    <main className="flex flex-col min-h-screen pb-24">
+      <header className="flex items-center justify-between px-8 py-6 mt-2">
+        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Log Cardio</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Log Cardio</h1>
         <div className="w-10" />
       </header>
 
       {/* Activity Type Selector */}
-      <div className="flex gap-3 px-6 mt-6">
+      <div className="flex gap-3 px-8">
         {ACTIVITY_TYPES.map((type) => (
           <button
             key={type}
             onClick={() => setActivityType(type)}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all border ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-medium transition-all border ${
               activityType === type
-                ? "bg-primary text-primary-foreground border-primary shadow-md"
-                : "bg-background text-muted-foreground border-input hover:bg-secondary"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
             }`}
           >
-            {type === "Walking" ? <Footprints size={18} /> : <Activity size={18} />}
+            {type === "Walking" ? <Footprints size={16} strokeWidth={1.5} /> : <Activity size={16} strokeWidth={1.5} />}
             {type}
           </button>
         ))}
       </div>
 
-      <div className="flex bg-secondary p-1 rounded-2xl mx-6 mt-4 mb-6">
+      {/* Tab Switcher */}
+      <div className="flex border-b border-border mx-8 mt-6 mb-6">
         <button 
           onClick={() => setActiveTab("manual")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === "manual" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+          className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 ${activeTab === "manual" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
         >
           Manual Log
         </button>
         <button 
           onClick={() => setActiveTab("gps")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === "gps" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+          className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 ${activeTab === "gps" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
         >
           GPS Tracking
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col px-6">
-        {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">{error}</div>}
+      <div className="flex-1 flex flex-col px-8">
+        {error && <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl mb-4">{error}</div>}
 
         {activeTab === "manual" ? (
-          <form onSubmit={handleManualSave} className="space-y-8 animate-in fade-in slide-in-from-left-4">
-            <div className="bg-background border rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center text-center gap-4 py-8">
-              <div className="p-4 bg-primary/10 text-primary rounded-full mb-2">
-                <Activity size={48} />
-              </div>
-              <h2 className="font-bold text-lg text-foreground">Great job getting moving!</h2>
-              <p className="text-muted-foreground text-sm max-w-[250px]">
-                Input your time and distance below to log this session manually.
+          <form onSubmit={handleManualSave} className="space-y-6">
+            <div className="flex flex-col items-center text-center gap-3 py-6">
+              <Activity size={36} strokeWidth={1.5} className="text-muted-foreground mb-2" />
+              <h2 className="font-semibold text-base">Great job getting moving!</h2>
+              <p className="text-muted-foreground text-sm max-w-[250px] leading-relaxed">
+                Input your time and distance below.
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="cardio-duration" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
-                  <Timer size={18} className="text-primary" /> Duration (minutes)
+                <label htmlFor="cardio-duration" className="text-xs font-medium text-muted-foreground ml-1">
+                  Duration (minutes)
                 </label>
                 <Input 
                   id="cardio-duration"
@@ -245,13 +236,13 @@ export default function NewCardio() {
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   required 
-                  className="text-lg font-bold h-16 bg-background"
+                  className="font-medium h-14"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="cardio-distance" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
-                  <Navigation size={18} className="text-primary" /> Distance (km)
+                <label htmlFor="cardio-distance" className="text-xs font-medium text-muted-foreground ml-1">
+                  Distance (km)
                 </label>
                 <Input 
                   id="cardio-distance"
@@ -261,41 +252,40 @@ export default function NewCardio() {
                   value={distance}
                   onChange={(e) => setDistance(e.target.value)}
                   required 
-                  className="text-lg font-bold h-16 bg-background"
+                  className="font-medium h-14"
                 />
               </div>
             </div>
 
-            <div className="pt-8">
-              <Button type="submit" className="w-full h-14 text-lg shadow-xl shadow-primary/20" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save Cardio Session"}
+            <div className="pt-6">
+              <Button type="submit" className="w-full h-13" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Done"}
               </Button>
             </div>
           </form>
         ) : (
-          <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4">
+          <div className="flex-1 flex flex-col">
             {/* Live Map */}
-            <div className="rounded-[2rem] overflow-hidden border shadow-sm mb-6 min-h-[300px] bg-background relative">
+            <div className="rounded-2xl overflow-hidden border border-border mb-6 min-h-[280px] bg-secondary/30 relative">
               {currentPos ? (
                 <LeafletMap center={currentPos} coords={coords} />
               ) : locationDenied ? (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="flex items-center justify-center h-[280px] text-muted-foreground">
                   <div className="text-center px-6">
-                    <Navigation size={40} className="mx-auto mb-4 text-red-400" />
-                    <p className="font-extrabold text-foreground text-lg mb-2">Location is Off</p>
-                    <p className="text-sm mb-4">Please enable your device&apos;s location services to use GPS tracking.</p>
+                    <Navigation size={32} strokeWidth={1.5} className="mx-auto mb-4 text-destructive/60" />
+                    <p className="font-semibold text-foreground mb-2">Location is Off</p>
+                    <p className="text-sm mb-4">Please enable location services.</p>
                     <button
                       onClick={() => { setLocationDenied(false); setCurrentPos(null); }}
-                      className="bg-primary text-primary-foreground font-bold text-sm px-6 py-3 rounded-xl"
+                      className="bg-primary text-primary-foreground font-medium text-sm px-6 py-3 rounded-full"
                     >Try Again</button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="flex items-center justify-center h-[280px] text-muted-foreground">
                   <div className="text-center">
-                    <Navigation size={32} className="mx-auto mb-3 text-primary/40 animate-pulse" />
-                    <p className="font-bold">Acquiring GPS position...</p>
-                    <p className="text-sm mt-1">Allow location access when prompted</p>
+                    <Navigation size={28} strokeWidth={1.5} className="mx-auto mb-3 text-muted-foreground/40 animate-pulse" />
+                    <p className="font-medium text-sm">Acquiring GPS...</p>
                   </div>
                 </div>
               )}
@@ -303,14 +293,14 @@ export default function NewCardio() {
 
             {/* Stats Bar */}
             {isTracking && (
-              <div className="grid grid-cols-2 gap-3 mb-6 animate-in fade-in slide-in-from-bottom-4">
-                <div className="bg-background border rounded-2xl p-4 text-center shadow-sm">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Time</p>
-                  <p className="text-2xl font-extrabold text-foreground">{formatTime(elapsedSec)}</p>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-secondary/40 rounded-xl p-4 text-center">
+                  <p className="text-[10px] font-medium text-muted-foreground mb-1">Time</p>
+                  <p className="text-xl font-semibold">{formatTime(elapsedSec)}</p>
                 </div>
-                <div className="bg-background border rounded-2xl p-4 text-center shadow-sm">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Distance</p>
-                  <p className="text-2xl font-extrabold text-foreground">{gpsDistance.toFixed(2)} km</p>
+                <div className="bg-secondary/40 rounded-xl p-4 text-center">
+                  <p className="text-[10px] font-medium text-muted-foreground mb-1">Distance</p>
+                  <p className="text-xl font-semibold">{gpsDistance.toFixed(2)} km</p>
                 </div>
               </div>
             )}
@@ -318,13 +308,13 @@ export default function NewCardio() {
             <Button 
                onClick={isTracking ? stopTracking : startTracking} 
                variant={isTracking ? "destructive" : "default"}
-               className="w-full h-16 text-xl shadow-xl transition-all"
+               className="w-full h-14 text-base"
                disabled={isLoading}
             >
               {isLoading ? "Saving..." : isTracking ? (
-                <><Square size={20} className="mr-2" /> Stop & Save</>
+                <><Square size={16} strokeWidth={1.5} className="mr-2" /> Stop & Save</>
               ) : (
-                <><Play size={20} className="mr-2" /> Start {activityType}</>
+                <><Play size={16} strokeWidth={1.5} className="mr-2" /> Start {activityType}</>
               )}
             </Button>
           </div>

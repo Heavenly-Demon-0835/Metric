@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Activity, LogOut } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
 
@@ -52,59 +52,53 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-col min-h-screen p-6 justify-center items-center bg-secondary/30">
-        <Activity className="animate-pulse text-primary mb-4" size={48} />
-        <p className="text-muted-foreground font-semibold">Loading Profile...</p>
+      <main className="flex flex-col min-h-screen px-8 py-6 justify-center items-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-muted-foreground text-sm font-medium">Loading...</p>
       </main>
     );
   }
 
   if (!profile) return null;
 
+  const fields = [
+    { label: "Age", value: profile.age ?? "—" },
+    { label: "Gender", value: profile.gender || "—" },
+    { label: "Weight", value: profile.weight ? `${profile.weight} kg` : "—" },
+    { label: "Height", value: profile.height ? `${profile.height} cm` : "—" },
+  ];
+
   return (
-    <main className="flex flex-col min-h-screen p-6 pb-24 bg-secondary/30">
-      <header className="flex items-center justify-between mb-8 mt-2">
+    <main className="flex flex-col min-h-screen px-8 py-6 pb-24">
+      <header className="flex items-center mb-10 mt-2">
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-full transition-colors">
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Profile</h1>
-        <div className="w-10" />
       </header>
 
-      <div className="flex flex-col items-center mb-10">
-        <div className="h-24 w-24 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-4xl mb-4 border-4 border-background shadow-sm uppercase">
+      <div className="flex flex-col items-center mb-12">
+        <div className="h-20 w-20 rounded-full bg-secondary text-foreground flex items-center justify-center font-semibold text-2xl mb-4 uppercase">
           {profile.name ? profile.name.charAt(0) : "U"}
         </div>
-        <h2 className="text-2xl font-bold">{profile.name || "App User"}</h2>
-        <p className="text-muted-foreground">{profile.email}</p>
+        <h2 className="text-xl font-semibold">{profile.name || "App User"}</h2>
+        <p className="text-muted-foreground text-sm mt-1">{profile.email}</p>
       </div>
 
-      <div className="space-y-6 flex-1">
-        <section className="bg-card rounded-3xl p-5 shadow-sm border space-y-4">
-          <h3 className="font-bold text-muted-foreground text-sm uppercase tracking-wider mb-2">My Body</h3>
-          
-          <div className="flex justify-between items-center border-b pb-3 border-border">
-            <span className="font-semibold text-foreground">Age</span>
-            <span className="font-bold text-muted-foreground">{profile.age ?? "-"}</span>
-          </div>
-          <div className="flex justify-between items-center border-b pb-3 border-border">
-            <span className="font-semibold text-foreground">Gender</span>
-            <span className="font-bold text-muted-foreground">{profile.gender || "-"}</span>
-          </div>
-          <div className="flex justify-between items-center border-b pb-3 border-border">
-            <span className="font-semibold text-foreground">Weight (kg)</span>
-            <span className="font-bold text-muted-foreground">{profile.weight ?? "-"}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-foreground">Height (cm)</span>
-            <span className="font-bold text-muted-foreground">{profile.height ?? "-"}</span>
-          </div>
-        </section>
+      <div className="flex-1">
+        <h3 className="text-xs font-medium text-muted-foreground mb-4 ml-1">My Body</h3>
+        <div className="space-y-0">
+          {fields.map((field) => (
+            <div key={field.label} className="flex justify-between items-center py-4 border-b border-border last:border-b-0">
+              <span className="text-sm font-medium">{field.label}</span>
+              <span className="text-sm text-muted-foreground">{field.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mt-8">
-        <Button onClick={handleLogout} variant="destructive" className="w-full h-14 text-lg">
-          <LogOut className="mr-2" size={20} />
+        <Button onClick={handleLogout} variant="outline" className="w-full h-13">
+          <LogOut className="mr-2" size={18} strokeWidth={1.5} />
           Log Out
         </Button>
       </div>

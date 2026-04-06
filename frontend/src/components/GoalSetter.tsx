@@ -11,10 +11,10 @@ interface GoalSetterProps {
 }
 
 const PRESETS = [
-  { metric_type: "calories", label: "Hit Calorie Target", unit: "kcal", defaultValue: 2000, icon: "🔥" },
-  { metric_type: "protein", label: "Hit Protein Target", unit: "g", defaultValue: 150, icon: "💪" },
-  { metric_type: "water", label: "Drink Water Target", unit: "ml", defaultValue: 3000, icon: "💧" },
-  { metric_type: "workout", label: "Complete Workouts", unit: "sessions", defaultValue: 1, icon: "🏋️" },
+  { metric_type: "calories", label: "Calorie Target", unit: "kcal", defaultValue: 2000, icon: "🔥" },
+  { metric_type: "protein", label: "Protein Target", unit: "g", defaultValue: 150, icon: "💪" },
+  { metric_type: "water", label: "Water Target", unit: "ml", defaultValue: 3000, icon: "💧" },
+  { metric_type: "workout", label: "Workouts", unit: "sessions", defaultValue: 1, icon: "🏋️" },
 ];
 
 export default function GoalSetter({ onCreated }: GoalSetterProps) {
@@ -73,30 +73,29 @@ export default function GoalSetter({ onCreated }: GoalSetterProps) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full py-4 border-2 border-dashed border-primary/30 rounded-2xl text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 active:scale-[0.98] transition-all"
+        className="w-full py-4 border border-dashed border-border rounded-xl text-muted-foreground font-medium text-sm flex items-center justify-center gap-2 hover:border-muted-foreground transition-colors"
       >
-        <Plus size={18} />
+        <Plus size={16} strokeWidth={1.5} />
         Add Goal
       </button>
     );
   }
 
   return (
-    <div className="bg-card border rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-bottom-2">
+    <div className="border border-border rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-sm">Set a Target</h3>
+        <h3 className="font-medium text-sm">Set a Target</h3>
         <button
           onClick={() => {
             setOpen(false);
             setSelected(null);
           }}
-          className="p-1.5 hover:bg-secondary rounded-lg"
+          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X size={16} />
+          <X size={14} strokeWidth={1.5} />
         </button>
       </div>
 
-      {/* Preset Selection */}
       {!selected ? (
         <div className="grid grid-cols-2 gap-2">
           {PRESETS.map((p) => (
@@ -106,23 +105,22 @@ export default function GoalSetter({ onCreated }: GoalSetterProps) {
                 setSelected(p.metric_type);
                 setTargetValue(String(p.defaultValue));
               }}
-              className="p-4 bg-secondary/50 rounded-xl text-left hover:bg-secondary active:scale-95 transition-all"
+              className="p-4 bg-secondary/50 rounded-xl text-left hover:bg-secondary active:opacity-80 transition-all"
             >
-              <span className="text-xl mb-1 block">{p.icon}</span>
-              <p className="text-sm font-bold">{p.label}</p>
+              <span className="text-lg mb-1 block">{p.icon}</span>
+              <p className="text-sm font-medium">{p.label}</p>
               <p className="text-xs text-muted-foreground">
-                Default: {p.defaultValue} {p.unit}
+                {p.defaultValue} {p.unit}
               </p>
             </button>
           ))}
         </div>
       ) : (
-        /* Value Input */
-        <div className="space-y-3 animate-in fade-in">
+        <div className="space-y-3">
           <div className="flex items-center gap-3 bg-secondary/50 rounded-xl p-4">
-            <span className="text-2xl">{preset?.icon}</span>
+            <span className="text-xl">{preset?.icon}</span>
             <div>
-              <p className="font-bold text-sm">{preset?.label}</p>
+              <p className="font-medium text-sm">{preset?.label}</p>
               <p className="text-xs text-muted-foreground">Daily target</p>
             </div>
           </div>
@@ -131,16 +129,16 @@ export default function GoalSetter({ onCreated }: GoalSetterProps) {
               type="number"
               value={targetValue}
               onChange={(e) => setTargetValue(e.target.value)}
-              className="text-center text-lg font-bold pr-16"
+              className="text-center font-medium pr-16"
               autoFocus
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
               {preset?.unit}
             </span>
           </div>
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1"
               onClick={() => setSelected(null)}
             >

@@ -30,7 +30,6 @@ const NAV_ITEMS = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
-// Auth routes that should not show the sidebar
 const HIDDEN_ROUTES = ["/auth", "/auth/login", "/auth/register"];
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
@@ -51,10 +50,10 @@ export function HamburgerButton() {
   return (
     <button
       onClick={toggle}
-      className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors"
+      className="p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-full transition-colors"
       aria-label="Open menu"
     >
-      <Menu size={24} />
+      <Menu size={22} strokeWidth={1.5} />
     </button>
   );
 }
@@ -64,39 +63,35 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   return (
     <>
-      {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-40 bg-black/20 transition-opacity duration-200"
           onClick={onClose}
         />
       )}
 
-      {/* Drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-background shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-background flex flex-col transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b">
+        <div className="flex items-center justify-between px-7 py-8">
           <div>
-            <h2 className="text-lg font-extrabold tracking-tight">Metric</h2>
-            <p className="text-xs text-muted-foreground font-medium">
+            <h2 className="text-lg font-semibold tracking-tight">Metric</h2>
+            <p className="text-xs text-muted-foreground font-medium mt-0.5">
               Fitness Logger
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-secondary rounded-full transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground rounded-full transition-colors"
             aria-label="Close menu"
           >
-            <X size={20} />
+            <X size={18} strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Nav Items */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -105,25 +100,20 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    ? "text-primary bg-primary/6"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon size={20} />
+                <Icon size={18} strokeWidth={1.5} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="p-6 pt-4 border-t">
-          <p className="text-[10px] text-muted-foreground font-medium text-center">
-            Built for people who take fitness seriously.
-          </p>
-        </div>
+        <div className="px-7 py-6" />
       </div>
     </>
   );

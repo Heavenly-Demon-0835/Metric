@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider } from "@/components/Sidebar";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "Metric Fitness Logger",
@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased bg-background text-foreground max-w-md mx-auto min-h-screen sm:shadow-2xl relative flex flex-col`}>
+      <body className={`${poppins.className} antialiased bg-background text-foreground max-w-md mx-auto min-h-screen relative flex flex-col`}>
         <SidebarProvider>
           {children}
         </SidebarProvider>

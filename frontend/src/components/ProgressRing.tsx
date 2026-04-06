@@ -14,8 +14,8 @@ interface ProgressRingProps {
 export default function ProgressRing({
   current,
   target,
-  size = 96,
-  strokeWidth = 8,
+  size = 80,
+  strokeWidth = 4,
   color,
   label,
   unit = "",
@@ -31,11 +31,10 @@ export default function ProgressRing({
   return (
     <Wrapper
       onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 ${onClick ? "active:scale-95 transition-transform cursor-pointer" : ""}`}
+      className={`flex flex-col items-center gap-1.5 ${onClick ? "active:opacity-80 transition-all cursor-pointer" : ""}`}
     >
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
-          {/* Track */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -45,7 +44,6 @@ export default function ProgressRing({
             strokeWidth={strokeWidth}
             className="text-secondary"
           />
-          {/* Progress */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -60,19 +58,21 @@ export default function ProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-extrabold leading-none">
+          <span className="text-xs font-semibold leading-none">
             {Math.round(current)}
           </span>
           {unit && (
-            <span className="text-[9px] font-bold text-muted-foreground">
+            <span className="text-[8px] font-medium text-muted-foreground">
               {unit}
             </span>
           )}
         </div>
       </div>
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-        {label}
-      </span>
+      {label && (
+        <span className="text-[10px] font-medium text-muted-foreground">
+          {label}
+        </span>
+      )}
     </Wrapper>
   );
 }

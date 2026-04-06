@@ -16,14 +16,12 @@ export default function WaterIntake() {
   const [customAmount, setCustomAmount] = useState("");
   const [error, setError] = useState("");
 
-  // Subscribe to WatermelonDB water_logs for real-time reactivity
   useEffect(() => {
     if (!database) return;
     const sub = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
     return () => sub.unsubscribe();
   }, []);
 
-  // Filter today's entries reactively
   const todayEntries = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -50,7 +48,6 @@ export default function WaterIntake() {
 
       const insertedId = await res.json();
 
-      // Write to local WatermelonDB for instant reactivity
       try {
         if (database) {
           await database.write(async () => {
@@ -77,9 +74,7 @@ export default function WaterIntake() {
 
   const deleteEntry = async (entry: any) => {
     try {
-      // Delete from API
       await fetch(`${API_BASE}/water/${entry.id}`, { method: "DELETE", headers: getAuthHeaders() });
-      // Delete from local DB
       if (database) {
         await database.write(async () => {
           await entry.markAsDeleted();
@@ -91,35 +86,34 @@ export default function WaterIntake() {
   };
 
   return (
-    <main className="flex flex-col p-6 min-h-screen bg-secondary/30">
-      <header className="flex items-center justify-between mb-8 mt-2 pb-4 border-b">
-        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={24} />
+    <main className="flex flex-col px-8 py-6 min-h-screen">
+      <header className="flex items-center justify-between mb-10 mt-2">
+        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Water Intake</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Water Intake</h1>
         <div className="w-10" />
       </header>
 
-      {/* Success Toast */}
       {isSaved && (
-        <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-          <div className="bg-sky-500 text-white p-4 rounded-2xl shadow-xl flex items-center justify-center gap-3">
-            <CheckCircle2 size={24} />
-            <span className="font-bold text-lg">Water logged!</span>
+        <div className="fixed inset-x-4 top-20 z-50 max-w-md mx-auto">
+          <div className="bg-primary text-primary-foreground p-4 rounded-2xl flex items-center justify-center gap-2">
+            <CheckCircle2 size={20} strokeWidth={1.5} />
+            <span className="font-medium text-sm">Water logged</span>
           </div>
         </div>
       )}
 
-      {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">{error}</div>}
+      {error && <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl mb-4">{error}</div>}
 
       {/* Progress Circle */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative w-48 h-48">
+      <div className="flex flex-col items-center mb-10">
+        <div className="relative w-44 h-44">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="85" fill="none" stroke="hsl(var(--secondary))" strokeWidth="14" />
+            <circle cx="100" cy="100" r="85" fill="none" stroke="hsl(var(--secondary))" strokeWidth="10" />
             <circle
               cx="100" cy="100" r="85" fill="none"
-              stroke="hsl(199, 89%, 48%)" strokeWidth="14"
+              stroke="hsl(var(--primary))" strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 85}`}
               strokeDashoffset={`${2 * Math.PI * 85 * (1 - progress / 100)}`}
@@ -127,26 +121,25 @@ export default function WaterIntake() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <Droplets size={28} className="text-sky-500 mb-1" />
-            <p className="text-3xl font-extrabold">{totalMl}</p>
-            <p className="text-xs font-bold text-muted-foreground">/ {goalMl} ml</p>
+            <p className="text-2xl font-semibold">{totalMl}</p>
+            <p className="text-xs font-medium text-muted-foreground">/ {goalMl} ml</p>
           </div>
         </div>
       </div>
 
       {/* Quick Add Presets */}
-      <section className="mb-8">
-        <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-3 ml-1">Quick Add</h2>
+      <section className="mb-10">
+        <h2 className="text-xs font-medium text-muted-foreground mb-3 ml-1">Quick Add</h2>
         <div className="grid grid-cols-3 gap-3">
           {PRESETS.map((ml) => (
             <button
               key={ml}
               onClick={() => addWater(ml)}
               disabled={isLoading}
-              className="bg-background border rounded-2xl p-4 text-center hover:bg-sky-50 hover:border-sky-200 active:scale-95 transition-all"
+              className="border border-border rounded-xl p-4 text-center hover:border-primary active:opacity-80 transition-all"
             >
-              <p className="font-extrabold text-lg">{ml >= 1000 ? `${ml / 1000}L` : `${ml}`}</p>
-              <p className="text-xs font-bold text-muted-foreground">{ml < 1000 ? "ml" : ""}</p>
+              <p className="font-semibold text-base">{ml >= 1000 ? `${ml / 1000}L` : `${ml}`}</p>
+              <p className="text-xs font-medium text-muted-foreground">{ml < 1000 ? "ml" : ""}</p>
             </button>
           ))}
           <div className="flex gap-2 items-center">
@@ -155,13 +148,13 @@ export default function WaterIntake() {
               placeholder="ml"
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
-              className="w-full h-full rounded-2xl border bg-background text-center font-bold text-lg px-2 outline-none focus:ring-2 focus:ring-sky-300"
+              className="w-full h-full rounded-xl border border-border bg-transparent text-center font-medium text-base px-2 outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>
         {customAmount && (
-          <Button onClick={() => { addWater(parseInt(customAmount) || 0); setCustomAmount(""); }} className="w-full mt-3 h-12 bg-sky-500 hover:bg-sky-600" disabled={isLoading}>
-            <Plus size={18} className="mr-2" /> Add {customAmount} ml
+          <Button onClick={() => { addWater(parseInt(customAmount) || 0); setCustomAmount(""); }} className="w-full mt-3 h-12 bg-primary hover:opacity-90" disabled={isLoading}>
+            <Plus size={16} className="mr-2" /> Add {customAmount} ml
           </Button>
         )}
       </section>
@@ -169,20 +162,20 @@ export default function WaterIntake() {
       {/* Today's Log */}
       {todayEntries.length > 0 && (
         <section>
-          <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wider mb-3 ml-1">Today&apos;s Log</h2>
+          <h2 className="text-xs font-medium text-muted-foreground mb-3 ml-1">Today&apos;s Log</h2>
           <div className="space-y-2">
             {todayEntries.map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between bg-background border rounded-2xl p-3 px-4">
+              <div key={entry.id} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
                 <div className="flex items-center gap-3">
-                  <Droplets size={18} className="text-sky-500" />
-                  <span className="font-bold">{entry.amountMl} ml</span>
+                  <Droplets size={16} strokeWidth={1.5} className="text-muted-foreground" />
+                  <span className="font-medium text-sm">{entry.amountMl} ml</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-muted-foreground">
                     {new Date(entry.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <button onClick={() => deleteEntry(entry)} className="text-muted-foreground hover:text-red-500 p-1">
-                    <Trash2 size={16} />
+                  <button onClick={() => deleteEntry(entry)} className="text-muted-foreground hover:text-destructive p-1 transition-colors">
+                    <Trash2 size={14} strokeWidth={1.5} />
                   </button>
                 </div>
               </div>

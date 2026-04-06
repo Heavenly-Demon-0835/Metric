@@ -12,16 +12,12 @@ interface RawEntry {
   _id: string;
   type: "workout" | "cardio" | "sleep" | "diet";
   date: string;
-  // workout
   exercises?: any[];
-  // cardio
   duration_minutes?: number;
   distance_km?: number;
   activity_type?: string;
-  // sleep
   duration_hours?: number;
   quality?: string;
-  // diet
   meal_name?: string;
   calories?: number;
   protein_g?: number;
@@ -92,7 +88,6 @@ export default function Diary() {
     if (d.getFullYear() === year && d.getMonth() === month) activeDays.add(d.getDate());
   });
 
-  // Group entries for selected day by type
   const dayEntries = selectedDay
     ? entries.filter((e) => {
         const d = parseAPIDate(e.date);
@@ -108,21 +103,11 @@ export default function Diary() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "workout": return <Dumbbell size={22} />;
-      case "cardio": return <Footprints size={22} />;
-      case "sleep": return <Moon size={22} />;
-      case "diet": return <Apple size={22} />;
-      default: return <Activity size={22} />;
-    }
-  };
-
-  const getColor = (type: string) => {
-    switch (type) {
-      case "workout": return "bg-primary/10 text-primary";
-      case "cardio": return "bg-[hsl(38,92%,50%)]/10 text-[hsl(38,92%,50%)]";
-      case "sleep": return "bg-indigo-500/10 text-indigo-500";
-      case "diet": return "bg-[hsl(142,71%,45%)]/10 text-[hsl(142,71%,45%)]";
-      default: return "bg-primary/10 text-primary";
+      case "workout": return <div className="p-2 bg-primary/10 text-primary rounded-xl"><Dumbbell size={18} strokeWidth={1.5} /></div>;
+      case "cardio": return <div className="p-2 bg-primary/10 text-primary rounded-xl"><Footprints size={18} strokeWidth={1.5} /></div>;
+      case "sleep": return <div className="p-2 bg-sky-100 text-sky-600 rounded-xl"><Moon size={18} strokeWidth={1.5} /></div>;
+      case "diet": return <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl"><Apple size={18} strokeWidth={1.5} /></div>;
+      default: return <div className="p-2 bg-secondary text-muted-foreground rounded-xl"><Activity size={18} strokeWidth={1.5} /></div>;
     }
   };
 
@@ -149,7 +134,7 @@ export default function Diary() {
   const getEntrySub = (e: RawEntry) => {
     switch (e.type) {
       case "workout": return e.exercises?.map((ex: any) => ex.name).join(", ") || "";
-      case "cardio": return `${e.duration_minutes ?? 0} min • ${e.distance_km ?? 0} km`;
+      case "cardio": return `${e.duration_minutes ?? 0} min · ${e.distance_km ?? 0} km`;
       case "sleep": return e.quality || "";
       case "diet": return `${e.calories ?? 0} kcal`;
       default: return "";
@@ -161,7 +146,6 @@ export default function Diary() {
     switch (d % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; }
   };
 
-  // ---- Detail / Edit / Delete handlers ----
   const openDetail = (entry: RawEntry) => {
     setDetailEntry(entry);
     setIsEditing(false);
@@ -212,32 +196,36 @@ export default function Diary() {
   };
 
   return (
-    <main className="flex flex-col min-h-screen bg-secondary/30 pb-20">
-      <header className="flex items-center justify-between p-6 pb-2 mt-2">
-        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={24} />
+    <main className="flex flex-col min-h-screen pb-20">
+      <header className="flex items-center justify-between px-8 py-6 mt-2">
+        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Timeline Diary</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Diary</h1>
         <button
           onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date().getDate()); }}
-          className="w-10 text-primary font-bold text-sm text-right"
+          className="text-primary font-medium text-xs"
         >Today</button>
       </header>
 
       {/* Calendar Header */}
-      <div className="px-6 py-4 flex items-center justify-between">
-        <h2 className="text-2xl font-extrabold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+      <div className="px-8 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
         <div className="flex gap-2">
-          <button onClick={prevMonth} className="h-10 w-10 bg-background rounded-full border shadow-sm flex items-center justify-center hover:bg-secondary"><ChevronLeft size={20} /></button>
-          <button onClick={nextMonth} className="h-10 w-10 bg-background rounded-full border shadow-sm flex items-center justify-center hover:bg-secondary"><ChevronRight size={20} /></button>
+          <button onClick={prevMonth} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">
+            <ChevronLeft size={18} strokeWidth={1.5} />
+          </button>
+          <button onClick={nextMonth} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">
+            <ChevronRight size={18} strokeWidth={1.5} />
+          </button>
         </div>
       </div>
 
       {/* Grid Calendar */}
-      <div className="px-6 mb-8">
-        <div className="grid grid-cols-7 gap-y-4 gap-x-2 text-center w-full">
+      <div className="px-8 mb-8">
+        <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center w-full">
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-            <div key={i} className="text-xs font-bold text-muted-foreground uppercase">{d}</div>
+            <div key={i} className="text-[10px] font-medium text-muted-foreground mb-1">{d}</div>
           ))}
           {Array.from({length: startOffset}).map((_, i) => <div key={`offset-${i}`}></div>)}
           {daysArray.map(d => {
@@ -245,11 +233,10 @@ export default function Diary() {
             const isSelected = selectedDay === d;
             return (
               <button key={d} onClick={() => setSelectedDay(d)}
-                className={`relative flex flex-col items-center justify-center h-[52px] rounded-2xl transition-all font-bold text-sm
-                  ${isSelected ? 'bg-primary text-primary-foreground shadow-md scale-105 z-10' : 'bg-background hover:bg-secondary text-foreground'}
-                  ${hasActivity && !isSelected ? 'border border-primary/20' : ''}`}>
+                className={`relative flex flex-col items-center justify-center h-11 rounded-xl transition-all text-sm font-medium
+                  ${isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary text-foreground'}`}>
                 {d}
-                {hasActivity && <div className={`w-1.5 h-1.5 rounded-full absolute bottom-1.5 ${isSelected ? 'bg-white' : 'bg-primary'}`} />}
+                {hasActivity && <div className={`w-1 h-1 rounded-full absolute bottom-1 ${isSelected ? 'bg-primary-foreground' : 'bg-primary'}`} />}
               </button>
             );
           })}
@@ -257,47 +244,40 @@ export default function Diary() {
       </div>
 
       {/* Entries Section */}
-      <div className="flex-1 bg-background rounded-t-[2.5rem] border-t p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] pb-24 min-h-[400px]">
-        <h3 className="text-xl font-extrabold mb-6">
-          {selectedDay ? `Entries on ${selectedDay}${ordinalSuffix(selectedDay)}` : 'Select a day'}
+      <div className="flex-1 px-8 pb-24 min-h-[300px]">
+        <h3 className="text-base font-semibold mb-6">
+          {selectedDay ? `${selectedDay}${ordinalSuffix(selectedDay)}` : 'Select a day'}
         </h3>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-10 opacity-60">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="font-bold text-muted-foreground">Loading entries...</p>
+          <div className="flex flex-col items-center justify-center py-10">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-muted-foreground text-sm font-medium">Loading...</p>
           </div>
         ) : Object.keys(grouped).length > 0 ? (
           <div className="space-y-6">
             {Object.entries(grouped).map(([type, items]) => (
               <div key={type}>
-                {/* Group header */}
                 <div className="flex items-center gap-2 mb-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${getColor(type)}`}>
-                    {getIcon(type)}
-                  </div>
-                  <span className="font-bold text-sm text-foreground">{getLabel(type)}</span>
+                  {getIcon(type)}
+                  <span className="text-xs font-medium text-muted-foreground">{getLabel(type)}</span>
                   {items.length > 1 && (
-                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{items.length}</span>
+                    <span className="text-[10px] font-medium text-primary bg-primary/8 px-2 py-0.5 rounded-full">{items.length}</span>
                   )}
                 </div>
 
-                {/* Individual entries */}
-                <div className="space-y-2 ml-2">
+                <div className="space-y-1">
                   {items.map((entry) => (
                     <button
                       key={entry._id}
                       onClick={() => openDetail(entry)}
-                      className="w-full text-left flex items-center p-3 rounded-2xl border bg-secondary/30 hover:bg-secondary transition-colors group"
+                      className="w-full text-left flex items-center py-3 px-1 hover:bg-secondary/50 rounded-xl transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-sm truncate">{getEntryTitle(entry)}</h4>
+                        <h4 className="font-medium text-sm">{getEntryTitle(entry)}</h4>
                         <p className="text-xs text-muted-foreground truncate">{getEntrySub(entry)}</p>
                       </div>
-                      <div className="flex items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors shrink-0 ml-2">
-                        <Eye size={16} />
-                        <span className="text-xs font-bold">View</span>
-                      </div>
+                      <Eye size={14} strokeWidth={1.5} className="text-muted-foreground shrink-0 ml-2" />
                     </button>
                   ))}
                 </div>
@@ -305,9 +285,8 @@ export default function Diary() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-10 opacity-60">
-            <span className="text-4xl mb-4">🤫</span>
-            <p className="font-bold text-muted-foreground">No entries for this day.</p>
+          <div className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground text-sm font-medium">No entries for this day</p>
           </div>
         )}
       </div>
@@ -315,30 +294,26 @@ export default function Diary() {
       {/* Detail Slide Panel */}
       {detailEntry && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setDetailEntry(null); setIsEditing(false); }} />
-          <div className="relative w-full max-w-md mx-auto bg-background rounded-t-[2rem] shadow-2xl border-t animate-in slide-in-from-bottom-8 duration-300 max-h-[85vh] overflow-y-auto">
-            {/* Panel Header */}
-            <div className="flex items-center justify-between p-5 pb-3 border-b sticky top-0 bg-background z-10 rounded-t-[2rem]">
+          <div className="absolute inset-0 bg-black/20" onClick={() => { setDetailEntry(null); setIsEditing(false); }} />
+          <div className="relative w-full max-w-md mx-auto bg-background rounded-t-2xl border-t max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 pb-4 sticky top-0 bg-background z-10 rounded-t-2xl">
               <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${getColor(detailEntry.type)}`}>
-                  {getIcon(detailEntry.type)}
-                </div>
-                <h3 className="font-extrabold text-lg">{getLabel(detailEntry.type).replace(/s$/, '')}</h3>
+                {getIcon(detailEntry.type)}
+                <h3 className="font-semibold">{getLabel(detailEntry.type).replace(/s$/, '')}</h3>
               </div>
-              <button onClick={() => { setDetailEntry(null); setIsEditing(false); }} className="p-2 rounded-full hover:bg-secondary">
-                <X size={20} />
+              <button onClick={() => { setDetailEntry(null); setIsEditing(false); }} className="p-2 text-muted-foreground hover:text-foreground rounded-full transition-colors">
+                <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              {/* Delete Confirmation */}
+            <div className="px-6 pb-6 space-y-4">
               {deleteConfirm === detailEntry._id && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 animate-in fade-in">
-                  <p className="font-bold text-red-600 text-sm mb-3">Are you sure you want to delete this entry?</p>
+                <div className="bg-destructive/8 rounded-xl p-4">
+                  <p className="text-destructive text-sm font-medium mb-3">Delete this entry?</p>
                   <div className="flex gap-2">
                     <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading}
                       onClick={() => deleteEntry(detailEntry._id, detailEntry.type)}>
-                      {actionLoading ? "Deleting..." : "Yes, Delete"}
+                      {actionLoading ? "Deleting..." : "Delete"}
                     </Button>
                     <Button variant="secondary" size="sm" className="flex-1" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
                   </div>
@@ -346,90 +321,76 @@ export default function Diary() {
               )}
 
               {!isEditing ? (
-                /* --- VIEW MODE --- */
                 <>
-                  <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  <div className="text-xs font-medium text-muted-foreground">
                     {parseAPIDate(detailEntry.date).toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
 
                   {detailEntry.type === "workout" && detailEntry.exercises?.map((ex: any, i: number) => (
-                    <div key={i} className="bg-secondary/50 rounded-2xl p-4">
-                      <p className="font-bold mb-2">{ex.name}</p>
+                    <div key={i} className="bg-secondary/40 rounded-xl p-4">
+                      <p className="font-medium text-sm mb-2">{ex.name}</p>
                       {ex.sets?.map((s: any, j: number) => (
                         <div key={j} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
                           <span className="text-muted-foreground">Set {j+1}</span>
-                          <span className="font-bold">{s.weight ? `${s.weight}kg × ` : ''}{s.reps} reps — {s.effort}</span>
+                          <span className="font-medium">{s.weight ? `${s.weight}kg × ` : ''}{s.reps} reps — {s.effort}</span>
                         </div>
                       ))}
                     </div>
                   ))}
 
                   {detailEntry.type === "cardio" && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Activity</p>
-                        <p className="font-extrabold text-lg">{detailEntry.activity_type || "Cardio"}</p>
-                      </div>
-                      <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Duration</p>
-                        <p className="font-extrabold text-lg">{detailEntry.duration_minutes} min</p>
-                      </div>
-                      <div className="bg-secondary/50 rounded-2xl p-4 text-center col-span-2">
-                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Distance</p>
-                        <p className="font-extrabold text-lg">{detailEntry.distance_km} km</p>
-                      </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: "Activity", value: detailEntry.activity_type || "Cardio" },
+                        { label: "Duration", value: `${detailEntry.duration_minutes} min` },
+                        { label: "Distance", value: `${detailEntry.distance_km} km` },
+                      ].map((stat) => (
+                        <div key={stat.label} className="bg-secondary/40 rounded-xl p-3 text-center">
+                          <p className="text-[10px] font-medium text-muted-foreground mb-1">{stat.label}</p>
+                          <p className="font-semibold text-sm">{stat.value}</p>
+                        </div>
+                      ))}
                     </div>
                   )}
 
                   {detailEntry.type === "sleep" && (
-                    <div className="bg-secondary/50 rounded-2xl p-6 text-center">
-                      <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Duration</p>
-                      <p className="font-extrabold text-3xl">{detailEntry.duration_hours} hrs</p>
+                    <div className="bg-secondary/40 rounded-xl p-5 text-center">
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">Duration</p>
+                      <p className="font-semibold text-2xl">{detailEntry.duration_hours} hrs</p>
                     </div>
                   )}
 
                   {detailEntry.type === "diet" && (
                     <div className="space-y-3">
-                      <div className="bg-secondary/50 rounded-2xl p-4">
-                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Meal</p>
-                        <p className="font-extrabold text-lg">{detailEntry.meal_name}</p>
+                      <div className="bg-secondary/40 rounded-xl p-4">
+                        <p className="text-[10px] font-medium text-muted-foreground mb-1">Meal</p>
+                        <p className="font-semibold">{detailEntry.meal_name}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                          <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Calories</p>
-                          <p className="font-extrabold text-lg">{detailEntry.calories} kcal</p>
-                        </div>
-                        {detailEntry.protein_g != null && (
-                          <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                            <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Protein</p>
-                            <p className="font-extrabold text-lg">{detailEntry.protein_g}g</p>
+                        {[
+                          { label: "Calories", value: `${detailEntry.calories} kcal`, show: true },
+                          { label: "Protein", value: `${detailEntry.protein_g}g`, show: detailEntry.protein_g != null },
+                          { label: "Carbs", value: `${detailEntry.carbs_g}g`, show: detailEntry.carbs_g != null },
+                          { label: "Fat", value: `${detailEntry.fat_g}g`, show: detailEntry.fat_g != null },
+                        ].filter(s => s.show).map((stat) => (
+                          <div key={stat.label} className="bg-secondary/40 rounded-xl p-3 text-center">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-1">{stat.label}</p>
+                            <p className="font-semibold text-sm">{stat.value}</p>
                           </div>
-                        )}
-                        {detailEntry.carbs_g != null && (
-                          <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                            <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Carbs</p>
-                            <p className="font-extrabold text-lg">{detailEntry.carbs_g}g</p>
-                          </div>
-                        )}
-                        {detailEntry.fat_g != null && (
-                          <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                            <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Fat</p>
-                            <p className="font-extrabold text-lg">{detailEntry.fat_g}g</p>
-                          </div>
-                        )}
+                        ))}
                       </div>
                       {detailEntry.water_ml != null && detailEntry.water_ml > 0 && (
-                        <div className="bg-secondary/50 rounded-2xl p-4 text-center">
-                          <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Water</p>
-                          <p className="font-extrabold text-lg">{detailEntry.water_ml} ml</p>
+                        <div className="bg-secondary/40 rounded-xl p-3 text-center">
+                          <p className="text-[10px] font-medium text-muted-foreground mb-1">Water</p>
+                          <p className="font-semibold text-sm">{detailEntry.water_ml} ml</p>
                         </div>
                       )}
                       {detailEntry.supplements && detailEntry.supplements.length > 0 && (
-                        <div className="bg-secondary/50 rounded-2xl p-4">
-                          <p className="text-xs font-bold text-muted-foreground uppercase mb-2">Supplements</p>
+                        <div className="bg-secondary/40 rounded-xl p-4">
+                          <p className="text-[10px] font-medium text-muted-foreground mb-2">Supplements</p>
                           <div className="flex flex-wrap gap-2">
                             {detailEntry.supplements.map((s) => (
-                              <span key={s} className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">{s}</span>
+                              <span key={s} className="bg-primary/8 text-primary text-xs font-medium px-3 py-1 rounded-full">{s}</span>
                             ))}
                           </div>
                         </div>
@@ -437,52 +398,48 @@ export default function Diary() {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
                   <div className="flex gap-3 pt-4">
-                    <Button variant="secondary" className="flex-1 h-12" onClick={startEdit}>
-                      <Pencil size={16} className="mr-2" /> Edit
+                    <Button variant="outline" className="flex-1 h-12" onClick={startEdit}>
+                      <Pencil size={14} strokeWidth={1.5} className="mr-2" /> Edit
                     </Button>
-                    <Button variant="destructive" className="flex-1 h-12" onClick={() => setDeleteConfirm(detailEntry._id)}>
-                      <Trash2 size={16} className="mr-2" /> Delete
+                    <Button variant="outline" className="flex-1 h-12 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setDeleteConfirm(detailEntry._id)}>
+                      <Trash2 size={14} strokeWidth={1.5} className="mr-2" /> Delete
                     </Button>
                   </div>
                 </>
               ) : (
-                /* --- EDIT MODE --- */
                 <div className="space-y-4">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest">Editing</p>
+                  <p className="text-xs font-medium text-primary">Editing</p>
 
                   {detailEntry.type === "sleep" && (
                     <div className="space-y-2">
-                      <label className="text-sm font-bold">Duration (hours)</label>
+                      <label className="text-xs font-medium text-muted-foreground">Duration (hours)</label>
                       <Input type="number" step="0.5" value={editData.duration_hours}
-                        onChange={(e) => setEditData({ ...editData, duration_hours: parseFloat(e.target.value) || 0 })} className="h-14 text-lg font-bold" />
+                        onChange={(e) => setEditData({ ...editData, duration_hours: parseFloat(e.target.value) || 0 })} className="h-13 font-medium" />
                     </div>
                   )}
 
                   {detailEntry.type === "diet" && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold">Meal Name</label>
-                        <Input value={editData.meal_name} onChange={(e) => setEditData({ ...editData, meal_name: e.target.value })} className="h-14 font-bold" />
+                        <label className="text-xs font-medium text-muted-foreground">Meal Name</label>
+                        <Input value={editData.meal_name} onChange={(e) => setEditData({ ...editData, meal_name: e.target.value })} className="h-13 font-medium" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold">Calories</label>
-                        <Input type="number" value={editData.calories} onChange={(e) => setEditData({ ...editData, calories: parseInt(e.target.value) || 0 })} className="h-14 font-bold" />
+                        <label className="text-xs font-medium text-muted-foreground">Calories</label>
+                        <Input type="number" value={editData.calories} onChange={(e) => setEditData({ ...editData, calories: parseInt(e.target.value) || 0 })} className="h-13 font-medium" />
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-muted-foreground">Protein (g)</label>
-                          <Input type="number" value={editData.protein_g} onChange={(e) => setEditData({ ...editData, protein_g: parseFloat(e.target.value) || 0 })} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-muted-foreground">Carbs (g)</label>
-                          <Input type="number" value={editData.carbs_g} onChange={(e) => setEditData({ ...editData, carbs_g: parseFloat(e.target.value) || 0 })} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-muted-foreground">Fat (g)</label>
-                          <Input type="number" value={editData.fat_g} onChange={(e) => setEditData({ ...editData, fat_g: parseFloat(e.target.value) || 0 })} />
-                        </div>
+                        {[
+                          { key: "protein_g", label: "Protein (g)" },
+                          { key: "carbs_g", label: "Carbs (g)" },
+                          { key: "fat_g", label: "Fat (g)" },
+                        ].map((field) => (
+                          <div key={field.key} className="space-y-1">
+                            <label className="text-[10px] font-medium text-muted-foreground">{field.label}</label>
+                            <Input type="number" value={editData[field.key]} onChange={(e) => setEditData({ ...editData, [field.key]: parseFloat(e.target.value) || 0 })} />
+                          </div>
+                        ))}
                       </div>
                     </>
                   )}
@@ -490,11 +447,11 @@ export default function Diary() {
                   {detailEntry.type === "cardio" && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold">Activity</label>
+                        <label className="text-xs font-medium text-muted-foreground">Activity</label>
                         <div className="flex gap-2">
                           {["Walking", "Running"].map((t) => (
                             <button key={t} type="button" onClick={() => setEditData({ ...editData, activity_type: t })}
-                              className={`flex-1 py-3 rounded-xl font-bold text-sm border transition-all ${editData.activity_type === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-input'}`}>
+                              className={`flex-1 py-3 rounded-full text-sm font-medium border transition-all ${editData.activity_type === t ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent border-border'}`}>
                               {t}
                             </button>
                           ))}
@@ -502,14 +459,14 @@ export default function Diary() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <label className="text-sm font-bold">Duration (min)</label>
+                          <label className="text-xs font-medium text-muted-foreground">Duration (min)</label>
                           <Input type="number" value={editData.duration_minutes}
-                            onChange={(e) => setEditData({ ...editData, duration_minutes: parseInt(e.target.value) || 0 })} className="h-14 font-bold" />
+                            onChange={(e) => setEditData({ ...editData, duration_minutes: parseInt(e.target.value) || 0 })} className="h-13 font-medium" />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-bold">Distance (km)</label>
+                          <label className="text-xs font-medium text-muted-foreground">Distance (km)</label>
                           <Input type="number" step="0.1" value={editData.distance_km}
-                            onChange={(e) => setEditData({ ...editData, distance_km: parseFloat(e.target.value) || 0 })} className="h-14 font-bold" />
+                            onChange={(e) => setEditData({ ...editData, distance_km: parseFloat(e.target.value) || 0 })} className="h-13 font-medium" />
                         </div>
                       </div>
                     </>
@@ -521,9 +478,9 @@ export default function Diary() {
 
                   <div className="flex gap-3 pt-4">
                     <Button className="flex-1 h-12" onClick={saveEdit} disabled={actionLoading}>
-                      {actionLoading ? "Saving..." : "Save Changes"}
+                      {actionLoading ? "Saving..." : "Save"}
                     </Button>
-                    <Button variant="secondary" className="flex-1 h-12" onClick={() => setIsEditing(false)}>Cancel</Button>
+                    <Button variant="outline" className="flex-1 h-12" onClick={() => setIsEditing(false)}>Cancel</Button>
                   </div>
                 </div>
               )}

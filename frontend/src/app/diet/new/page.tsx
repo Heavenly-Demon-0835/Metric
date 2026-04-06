@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
-  Apple,
   Check,
   ChevronDown,
   Search,
@@ -38,38 +37,29 @@ export default function NewDietEntry() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FoodItemData[]>([]);
   const [staples, setStaples] = useState<FoodItemData[]>([]);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Global search state
   const [isGlobalSearch, setIsGlobalSearch] = useState(false);
-
-  // AddFoodDialog state
   const [showAddFood, setShowAddFood] = useState(false);
 
-  // Selected food items
   const [items, setItems] = useState<SelectedItem[]>([]);
 
-  // Legacy fields for manual entry fallback
   const [manualMode, setManualMode] = useState(false);
   const [mealName, setMealName] = useState("");
   const [manualCalories, setManualCalories] = useState("");
 
-  // Macros toggle (manual mode)
   const [showMacros, setShowMacros] = useState(false);
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
 
-  // Supplements
   const [supplements, setSupplements] = useState<string[]>([]);
   const [newSupplement, setNewSupplement] = useState("");
 
-  // Load staples on mount
   useEffect(() => {
     const ctx = getMealContext();
     fetch(`${API_BASE}/food-library/staples?context=${ctx}`, {
@@ -80,7 +70,6 @@ export default function NewDietEntry() {
       .catch(() => {});
   }, []);
 
-  // Search debounce
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -98,7 +87,6 @@ export default function NewDietEntry() {
     return () => clearTimeout(timer);
   }, [searchQuery, isGlobalSearch]);
 
-  // Click outside to close search results
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -109,7 +97,6 @@ export default function NewDietEntry() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Aggregate totals from items
   const totals = useMemo(() => {
     return items.reduce(
       (acc, item) => ({
@@ -149,11 +136,10 @@ export default function NewDietEntry() {
         body: JSON.stringify(payload),
       });
       if (res.ok || res.status === 409) {
-        // Even if 409 (duplicate), we can just select the food directly
         selectFood(food);
       }
     } catch {
-      selectFood(food); // Fallback to just using it without saving if network issues
+      selectFood(food);
     }
   };
 
@@ -192,14 +178,12 @@ export default function NewDietEntry() {
       const payload: any = {};
 
       if (manualMode || items.length === 0) {
-        // Legacy manual entry
         payload.meal_name = mealName || "Manual Entry";
         payload.calories = parseInt(manualCalories) || 0;
         if (protein) payload.protein_g = parseFloat(protein);
         if (carbs) payload.carbs_g = parseFloat(carbs);
         if (fat) payload.fat_g = parseFloat(fat);
       } else {
-        // Food library entry
         payload.meal_name = items.map((i) => i.food.name).join(" + ");
         payload.calories = totals.calories;
         payload.protein_g = totals.protein;
@@ -235,63 +219,48 @@ export default function NewDietEntry() {
 
   return (
     <main className="flex flex-col min-h-screen pb-6">
-      <div className="bg-primary/10 p-6 pb-8 rounded-b-[2rem]">
-        <header className="flex items-center justify-between mt-2 mb-6">
-          <Link
-            href="/dashboard"
-            className="p-2 -ml-2 text-primary hover:bg-primary/20 rounded-full transition-colors"
-          >
-            <ArrowLeft size={24} />
-          </Link>
-          <div className="w-10 text-primary text-sm font-bold flex justify-end">
-            Diary
-          </div>
-        </header>
+      <header className="flex items-center justify-between px-8 py-6 mt-2">
+        <Link
+          href="/dashboard"
+          className="p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-full transition-colors"
+        >
+          <ArrowLeft size={22} strokeWidth={1.5} />
+        </Link>
+        <h1 className="text-lg font-semibold tracking-tight">Log a Meal</h1>
+        <div className="w-10" />
+      </header>
 
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-16 h-16 rounded-3xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg transform rotate-[-8deg] mb-2">
-            <Apple size={32} />
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Log a Meal
-          </h1>
-          <p className="text-muted-foreground font-medium text-sm text-center max-w-[280px]">
-            Search your food library or enter macros manually.
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSave} className="p-6 space-y-5 flex-1 mt-4">
+      <form onSubmit={handleSave} className="px-8 space-y-5 flex-1 mt-2">
         {error && (
-          <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg">
+          <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl">
             {error}
           </div>
         )}
 
         {/* Mode Toggle */}
-        <div className="flex rounded-2xl bg-secondary p-1 gap-1">
+        <div className="flex border-b border-border">
           <button
             type="button"
             onClick={() => setManualMode(false)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 flex items-center justify-center gap-1.5 ${
               !manualMode
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground"
             }`}
           >
-            <Search size={14} className="inline mr-1.5 -mt-0.5" />
+            <Search size={14} strokeWidth={1.5} />
             Food Search
           </button>
           <button
             type="button"
             onClick={() => setManualMode(true)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 flex items-center justify-center gap-1.5 ${
               manualMode
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground"
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground"
             }`}
           >
-            <Calculator size={14} className="inline mr-1.5 -mt-0.5" />
+            <Calculator size={14} strokeWidth={1.5} />
             Manual
           </button>
         </div>
@@ -300,8 +269,8 @@ export default function NewDietEntry() {
           <>
             {/* Staple Chips */}
             {staples.length > 0 && items.length === 0 && (
-              <div className="space-y-2 animate-in fade-in">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground ml-1">
                   {getMealContext()} staples
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -310,9 +279,9 @@ export default function NewDietEntry() {
                       key={s._id}
                       type="button"
                       onClick={() => selectFood(s)}
-                      className="px-3.5 py-2 bg-primary/10 text-primary text-sm font-bold rounded-xl flex items-center gap-1.5 active:scale-95 transition-transform hover:bg-primary/20"
+                      className="px-3 py-2 border border-border text-sm font-medium rounded-full flex items-center gap-1.5 active:opacity-80 transition-all hover:border-primary"
                     >
-                      <Star size={12} />
+                      <Star size={12} strokeWidth={1.5} className="text-muted-foreground" />
                       {s.name}
                     </button>
                   ))}
@@ -324,31 +293,31 @@ export default function NewDietEntry() {
             <div ref={searchRef} className="relative">
               <div className="relative">
                 <Search
-                  size={18}
+                  size={16}
+                  strokeWidth={1.5}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 />
                 <Input
                   id="food-search"
-                  placeholder="Search foods... e.g. chicken breast"
+                  placeholder="Search foods..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setShowResults(true);
                   }}
                   onFocus={() => setShowResults(true)}
-                  className="pl-11 pr-24 h-14 text-base"
+                  className="pl-11 pr-24 h-13 text-sm"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <div className="h-6 w-px bg-border" />
                   <button
                     type="button"
                     onClick={() => {
                       setIsGlobalSearch(!isGlobalSearch);
                       setSearchResults([]);
                     }}
-                    className={`text-xs font-bold px-2 py-1.5 rounded-lg transition-colors ${
+                    className={`text-xs font-medium px-2 py-1.5 rounded-lg transition-colors ${
                       isGlobalSearch
-                        ? "bg-primary/20 text-primary"
+                        ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-secondary"
                     }`}
                   >
@@ -357,18 +326,17 @@ export default function NewDietEntry() {
                 </div>
               </div>
 
-              {/* Search Results Dropdown */}
               {showResults && searchResults.length > 0 && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border rounded-2xl shadow-xl max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl max-h-64 overflow-y-auto">
                   {searchResults.map((food: any) => (
                     <button
                       key={food.id || food._id}
                       type="button"
                       onClick={() => !isGlobalSearch && selectFood(food)}
-                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/50 transition-colors text-left border-b last:border-b-0"
+                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-secondary/50 transition-colors text-left border-b border-border last:border-b-0"
                     >
                       <div className="flex-1 min-w-0 pr-3">
-                        <p className="font-bold text-sm truncate">{food.name}</p>
+                        <p className="font-medium text-sm truncate">{food.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {food.calories_per_100g} kcal · {food.protein_per_100g}
                           g P · {food.carbs_per_100g}g C · {food.fat_per_100g}g F
@@ -378,7 +346,7 @@ export default function NewDietEntry() {
                           </span>
                         </p>
                         {isGlobalSearch && food.brand && (
-                          <span className="text-[10px] uppercase font-bold text-primary mt-1 inline-block bg-primary/10 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-medium text-primary mt-1 inline-block bg-primary/8 px-1.5 py-0.5 rounded">
                             {food.brand}
                           </span>
                         )}
@@ -386,12 +354,12 @@ export default function NewDietEntry() {
                       {isGlobalSearch ? (
                         <div
                           onClick={(e) => importAndSelectFood(food, e)}
-                          className="bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                          className="bg-primary/8 hover:bg-primary/15 text-primary text-xs font-medium px-3 py-1.5 rounded-full transition-colors shrink-0"
                         >
                           Import
                         </div>
                       ) : (
-                        <Plus size={18} className="text-primary shrink-0" />
+                        <Plus size={16} strokeWidth={1.5} className="text-muted-foreground shrink-0" />
                       )}
                     </button>
                   ))}
@@ -401,7 +369,7 @@ export default function NewDietEntry() {
               {showResults &&
                 searchQuery.trim() &&
                 searchResults.length === 0 && (
-                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-card border rounded-2xl shadow-xl p-4 text-center animate-in fade-in">
+                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl p-4 text-center">
                     <p className="text-sm text-muted-foreground">
                       No foods found for &ldquo;{searchQuery}&rdquo;
                     </p>
@@ -411,9 +379,9 @@ export default function NewDietEntry() {
                         setShowResults(false);
                         setShowAddFood(true);
                       }}
-                      className="mt-3 w-full py-3 bg-primary/10 text-primary font-bold text-sm rounded-xl hover:bg-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="mt-3 w-full py-3 border border-border text-foreground font-medium text-sm rounded-full hover:bg-secondary active:opacity-80 transition-all flex items-center justify-center gap-2"
                     >
-                      <Plus size={16} />
+                      <Plus size={14} strokeWidth={1.5} />
                       Add &ldquo;{searchQuery}&rdquo; to Library
                     </button>
                   </div>
@@ -422,23 +390,23 @@ export default function NewDietEntry() {
 
             {/* Selected Items List */}
             {items.length > 0 && (
-              <section className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                <h3 className="text-sm font-bold ml-1">
+              <section className="space-y-3">
+                <h3 className="text-xs font-medium text-muted-foreground ml-1">
                   Items ({items.length})
                 </h3>
                 {items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="bg-card border rounded-2xl p-4 space-y-3"
+                    className="border-b border-border pb-4 last:border-b-0 space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-bold text-sm">{item.food.name}</p>
+                      <p className="font-medium text-sm">{item.food.name}</p>
                       <button
                         type="button"
                         onClick={() => removeItem(idx)}
-                        className="p-1.5 hover:bg-red-100 text-red-500 rounded-lg transition-colors"
+                        className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
                       >
-                        <X size={16} />
+                        <X size={14} strokeWidth={1.5} />
                       </button>
                     </div>
                     <div className="flex items-center gap-3">
@@ -450,89 +418,51 @@ export default function NewDietEntry() {
                           onChange={(e) =>
                             updateItemWeight(idx, e.target.value)
                           }
-                          className="text-center font-bold pr-6"
+                          className="text-center font-medium pr-6 h-11"
                           placeholder="100"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
                           g
                         </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-center">
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                          Cal
-                        </p>
-                        <p className="text-sm font-extrabold">
-                          {item.macros.calories}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                          Protein
-                        </p>
-                        <p className="text-sm font-extrabold text-blue-500">
-                          {item.macros.protein}g
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                          Carbs
-                        </p>
-                        <p className="text-sm font-extrabold text-amber-500">
-                          {item.macros.carbs}g
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                          Fat
-                        </p>
-                        <p className="text-sm font-extrabold text-rose-400">
-                          {item.macros.fat}g
-                        </p>
-                      </div>
+                      {[
+                        { label: "Cal", value: item.macros.calories, unit: "" },
+                        { label: "Protein", value: item.macros.protein, unit: "g" },
+                        { label: "Carbs", value: item.macros.carbs, unit: "g" },
+                        { label: "Fat", value: item.macros.fat, unit: "g" },
+                      ].map((m) => (
+                        <div key={m.label}>
+                          <p className="text-[10px] font-medium text-muted-foreground">
+                            {m.label}
+                          </p>
+                          <p className="text-sm font-semibold">
+                            {m.value}{m.unit}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
 
                 {/* Totals Bar */}
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
-                  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-2">
+                <div className="bg-secondary/50 rounded-xl p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
                     Total
                   </p>
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div>
-                      <p className="text-lg font-extrabold">
-                        {totals.calories}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-bold">
-                        kcal
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-extrabold text-blue-500">
-                        {totals.protein}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-bold">
-                        g prot
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-extrabold text-amber-500">
-                        {totals.carbs}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-bold">
-                        g carb
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-extrabold text-rose-400">
-                        {totals.fat}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-bold">
-                        g fat
-                      </p>
-                    </div>
+                    {[
+                      { value: totals.calories, unit: "kcal" },
+                      { value: totals.protein, unit: "g prot" },
+                      { value: totals.carbs, unit: "g carb" },
+                      { value: totals.fat, unit: "g fat" },
+                    ].map((t, i) => (
+                      <div key={i}>
+                        <p className="text-base font-semibold">{t.value}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">{t.unit}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </section>
@@ -540,9 +470,9 @@ export default function NewDietEntry() {
           </>
         ) : (
           /* Manual Mode */
-          <section className="space-y-4 animate-in fade-in">
+          <section className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="diet-meal" className="text-sm font-bold ml-1">
+              <label htmlFor="diet-meal" className="text-xs font-medium text-muted-foreground ml-1">
                 Meal Name
               </label>
               <Input
@@ -557,7 +487,7 @@ export default function NewDietEntry() {
             <div className="space-y-2">
               <label
                 htmlFor="diet-calories"
-                className="text-sm font-bold ml-1"
+                className="text-xs font-medium text-muted-foreground ml-1"
               >
                 Total Calories (kcal)
               </label>
@@ -568,7 +498,7 @@ export default function NewDietEntry() {
                 value={manualCalories}
                 onChange={(e) => setManualCalories(e.target.value)}
                 required={manualMode}
-                className="text-lg font-bold"
+                className="font-medium"
               />
             </div>
 
@@ -576,91 +506,56 @@ export default function NewDietEntry() {
             <button
               type="button"
               onClick={() => setShowMacros(!showMacros)}
-              className="flex items-center gap-2 font-bold text-sm text-primary hover:underline py-2"
+              className="flex items-center gap-2 font-medium text-sm text-primary py-2"
             >
-              {showMacros ? "Hide" : "Add"} Macronutrients (Optional){" "}
+              {showMacros ? "Hide" : "Add"} Macros{" "}
               <ChevronDown
-                size={16}
+                size={14}
+                strokeWidth={1.5}
                 className={`transition-transform ${showMacros ? "rotate-180" : ""}`}
               />
             </button>
 
             {showMacros && (
-              <div className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="diet-protein"
-                    className="text-xs font-bold text-muted-foreground uppercase text-center block"
-                  >
-                    Protein
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="diet-protein"
-                      type="number"
-                      placeholder="0"
-                      value={protein}
-                      onChange={(e) => setProtein(e.target.value)}
-                      className="text-center font-bold pr-6"
-                    />
-                    <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">
-                      g
-                    </span>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { id: "diet-protein", label: "Protein", value: protein, set: setProtein },
+                  { id: "diet-carbs", label: "Carbs", value: carbs, set: setCarbs },
+                  { id: "diet-fat", label: "Fat", value: fat, set: setFat },
+                ].map((field) => (
+                  <div key={field.id} className="space-y-2">
+                    <label
+                      htmlFor={field.id}
+                      className="text-[10px] font-medium text-muted-foreground text-center block"
+                    >
+                      {field.label}
+                    </label>
+                    <div className="relative">
+                      <Input
+                        id={field.id}
+                        type="number"
+                        placeholder="0"
+                        value={field.value}
+                        onChange={(e) => field.set(e.target.value)}
+                        className="text-center font-medium pr-6"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                        g
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="diet-carbs"
-                    className="text-xs font-bold text-muted-foreground uppercase text-center block"
-                  >
-                    Carbs
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="diet-carbs"
-                      type="number"
-                      placeholder="0"
-                      value={carbs}
-                      onChange={(e) => setCarbs(e.target.value)}
-                      className="text-center font-bold pr-6"
-                    />
-                    <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">
-                      g
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="diet-fat"
-                    className="text-xs font-bold text-muted-foreground uppercase text-center block"
-                  >
-                    Fats
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="diet-fat"
-                      type="number"
-                      placeholder="0"
-                      value={fat}
-                      onChange={(e) => setFat(e.target.value)}
-                      className="text-center font-bold pr-6"
-                    />
-                    <span className="absolute right-3 top-[14px] text-xs font-bold text-muted-foreground">
-                      g
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
           </section>
         )}
 
-        <div className="h-px bg-border w-full my-4" />
+        <div className="h-px bg-border w-full" />
 
         {/* Supplements */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-bold ml-1">Supplements</label>
+            <label className="text-xs font-medium text-muted-foreground ml-1">Supplements</label>
             <div className="flex gap-2">
               <Input
                 placeholder="e.g. Creatine 5g"
@@ -679,18 +574,18 @@ export default function NewDietEntry() {
                 size="icon"
                 className="shrink-0 h-14 w-14"
               >
-                <Plus size={20} />
+                <Plus size={18} strokeWidth={1.5} />
               </Button>
             </div>
 
             {supplements.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3 pt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {supplements.map((sup) => (
                   <div
                     key={sup}
-                    className="px-4 py-2 bg-secondary text-sm font-bold rounded-xl flex items-center gap-2"
+                    className="px-3 py-1.5 bg-secondary text-sm font-medium rounded-full flex items-center gap-1.5"
                   >
-                    <Check size={14} className="text-primary" />
+                    <Check size={12} strokeWidth={1.5} className="text-primary" />
                     {sup}
                   </div>
                 ))}
@@ -699,11 +594,11 @@ export default function NewDietEntry() {
           </div>
         </section>
 
-        {/* Sticky Save Button — no longer fixed, proper flow */}
-        <div className="sticky bottom-0 pt-4 pb-2 bg-gradient-to-t from-background via-background to-transparent -mx-6 px-6">
+        {/* Save Button */}
+        <div className="sticky bottom-0 pt-4 pb-2 bg-background -mx-8 px-8">
           <Button
             type="submit"
-            className="w-full h-14 text-lg shadow-xl shadow-primary/20"
+            className="w-full h-13"
             disabled={
               isLoading ||
               (!manualMode && items.length === 0) ||
@@ -713,7 +608,7 @@ export default function NewDietEntry() {
             {isLoading
               ? "Saving..."
               : items.length > 0
-                ? `Save Entry · ${totals.calories} kcal`
+                ? `Save · ${totals.calories} kcal`
                 : "Save Entry"}
           </Button>
         </div>

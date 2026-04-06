@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE } from "@/lib/api";
@@ -15,7 +15,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  // Form Data
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,30 +70,38 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex flex-1 flex-col p-6">
-      <header className="flex items-center justify-between mb-8 mt-2">
+    <main className="flex flex-1 flex-col px-8 py-6">
+      <header className="flex items-center justify-between mb-12 mt-2">
         <button 
           onClick={() => step > 1 ? setStep(step - 1) : router.push('/')}
-          className="p-2 -ml-2 text-muted-foreground hover:text-foreground active:bg-secondary rounded-full transition-colors"
+          className="p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-full transition-colors"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </button>
-        <Activity size={24} className="text-primary" />
-        <div className="w-10 flex justify-end">
-          <span className="text-sm font-bold text-muted-foreground">{step}/3</span>
+        {/* Step dots */}
+        <div className="flex gap-2">
+          {[1, 2, 3].map((s) => (
+            <div
+              key={s}
+              className={`w-2 h-2 rounded-full transition-all ${
+                s === step ? "bg-primary w-6" : s < step ? "bg-primary/40" : "bg-border"
+              }`}
+            />
+          ))}
         </div>
+        <div className="w-10" />
       </header>
 
       <div className="flex-1 flex flex-col pb-20">
         
         {step === 1 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Create Account</h1>
-            <p className="text-muted-foreground mb-8 text-lg">Let's get your basics down</p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">Create Account</h1>
+            <p className="text-muted-foreground mb-10 text-sm">Let&apos;s get your basics down</p>
 
             <form onSubmit={handleNext} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="reg-name" className="text-sm font-semibold text-foreground ml-1">Full Name</label>
+                <label htmlFor="reg-name" className="text-xs font-medium text-muted-foreground ml-1">Full Name</label>
                 <Input 
                   id="reg-name"
                   placeholder="John Doe" 
@@ -104,7 +111,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="reg-email" className="text-sm font-semibold text-foreground ml-1">Email</label>
+                <label htmlFor="reg-email" className="text-xs font-medium text-muted-foreground ml-1">Email</label>
                 <Input 
                   id="reg-email"
                   type="email" 
@@ -115,7 +122,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="reg-password" className="text-sm font-semibold text-foreground ml-1">Password</label>
+                <label htmlFor="reg-password" className="text-xs font-medium text-muted-foreground ml-1">Password</label>
                 <div className="relative">
                   <Input 
                     id="reg-password"
@@ -129,17 +136,17 @@ export default function RegisterPage() {
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-[14px] text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
                   </button>
                 </div>
               </div>
               
-              <div className="pt-4">
-                <Button type="submit" className="w-full">
-                  Continue <ArrowRight className="ml-2" size={20} />
+              <div className="pt-6">
+                <Button type="submit" className="w-full h-13">
+                  Continue <ArrowRight className="ml-2" size={18} strokeWidth={1.5} />
                 </Button>
               </div>
             </form>
@@ -147,13 +154,13 @@ export default function RegisterPage() {
         )}
 
         {step === 2 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">About You</h1>
-            <p className="text-muted-foreground mb-8 text-lg">This helps us personalize your metrics</p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">About You</h1>
+            <p className="text-muted-foreground mb-10 text-sm">This helps us personalize your metrics</p>
 
             <form onSubmit={handleNext} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="reg-age" className="text-sm font-semibold text-foreground ml-1">Age</label>
+                <label htmlFor="reg-age" className="text-xs font-medium text-muted-foreground ml-1">Age</label>
                 <Input 
                   id="reg-age"
                   type="number" 
@@ -164,17 +171,17 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground ml-1">Gender</label>
+                <label className="text-xs font-medium text-muted-foreground ml-1">Gender</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['Male', 'Female', 'Other', 'Prefer not to say'].map((g) => (
                     <button
                       key={g}
                       type="button"
                       onClick={() => setGender(g)}
-                      className={`h-14 rounded-2xl border text-sm font-bold transition-all ${
+                      className={`h-13 rounded-full border text-sm font-medium transition-all ${
                         gender === g 
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                          : 'bg-background text-foreground border-input hover:bg-secondary'
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-transparent text-foreground border-border hover:border-muted-foreground'
                       }`}
                     >
                       {g}
@@ -184,8 +191,8 @@ export default function RegisterPage() {
               </div>
               
               <div className="pt-8">
-                <Button type="submit" className="w-full" disabled={!age || !gender}>
-                  Continue <ArrowRight className="ml-2" size={20} />
+                <Button type="submit" className="w-full h-13" disabled={!age || !gender}>
+                  Continue <ArrowRight className="ml-2" size={18} strokeWidth={1.5} />
                 </Button>
               </div>
             </form>
@@ -193,15 +200,15 @@ export default function RegisterPage() {
         )}
 
         {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Your Body</h1>
-            <p className="text-muted-foreground mb-8 text-lg">Final step before we begin</p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">Your Body</h1>
+            <p className="text-muted-foreground mb-10 text-sm">Final step before we begin</p>
 
             <form onSubmit={handleRegister} className="space-y-5">
-              {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg animate-in fade-in slide-in-from-top-2">{error}</div>}
+              {error && <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl">{error}</div>}
               
               <div className="space-y-2">
-                <label htmlFor="reg-weight" className="text-sm font-semibold text-foreground ml-1">Weight (kg)</label>
+                <label htmlFor="reg-weight" className="text-xs font-medium text-muted-foreground ml-1">Weight (kg)</label>
                 <Input 
                   id="reg-weight"
                   type="number" 
@@ -213,7 +220,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="reg-height" className="text-sm font-semibold text-foreground ml-1">Height (cm)</label>
+                <label htmlFor="reg-height" className="text-xs font-medium text-muted-foreground ml-1">Height (cm)</label>
                 <Input 
                   id="reg-height"
                   type="number" 
@@ -225,8 +232,8 @@ export default function RegisterPage() {
               </div>
               
               <div className="pt-8">
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Processing..." : "Complete Registration"}
+                <Button type="submit" className="w-full h-13" disabled={isLoading}>
+                  {isLoading ? "Processing..." : "Complete"}
                 </Button>
               </div>
             </form>
@@ -234,9 +241,9 @@ export default function RegisterPage() {
         )}
 
         {step === 1 && (
-          <p className="text-center text-muted-foreground mt-8 text-base">
+          <p className="text-center text-muted-foreground mt-8 text-sm">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-primary font-bold hover:underline">
+            <Link href="/auth/login" className="text-primary font-medium hover:underline">
               Sign In
             </Link>
           </p>

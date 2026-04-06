@@ -10,12 +10,10 @@ import { API_BASE, getAuthHeaders } from "@/lib/api";
 export default function SleepTracker() {
   const [activeTab, setActiveTab] = useState<"toggle" | "manual">("toggle");
   
-  // Toggle State
   const [isSleeping, setIsSleeping] = useState(false);
   const [sleepStart, setSleepStart] = useState<Date | null>(null);
   const [loggedHours, setLoggedHours] = useState<number | null>(null);
   
-  // Manual State
   const [duration, setDuration] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState("");
@@ -44,13 +42,11 @@ export default function SleepTracker() {
 
   const handleToggle = async () => {
     if (!isSleeping) {
-      // Start sleeping
       setIsSleeping(true);
       setSleepStart(new Date());
       setIsSaved(false);
       setLoggedHours(null);
     } else {
-      // Wake up — save first, then reset
       if (sleepStart) {
         const elapsed = (Date.now() - sleepStart.getTime()) / (1000 * 60 * 60);
         const saved = await saveSleepLog(parseFloat(elapsed.toFixed(2)));
@@ -74,100 +70,97 @@ export default function SleepTracker() {
   };
 
   return (
-    <main className="flex flex-col p-6 min-h-screen bg-secondary/30">
-      <header className="flex items-center justify-between mb-8 mt-2 pb-4 border-b">
-        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={24} />
+    <main className="flex flex-col px-8 py-6 min-h-screen">
+      <header className="flex items-center justify-between mb-10 mt-2">
+        <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight text-foreground">Sleep Tracker</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Sleep Tracker</h1>
         <div className="w-10" />
       </header>
 
-      <div className="flex bg-secondary p-1 rounded-2xl mb-8">
+      {/* Tab Switcher */}
+      <div className="flex border-b border-border mb-10">
         <button 
           onClick={() => setActiveTab("toggle")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === "toggle" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+          className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 ${activeTab === "toggle" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
         >
           Auto Toggle
         </button>
         <button 
           onClick={() => setActiveTab("manual")}
-          className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === "manual" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+          className={`flex-1 pb-3 text-sm font-medium transition-all border-b-2 ${activeTab === "manual" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
         >
           Manual Log
         </button>
       </div>
 
       <div className="flex-1 flex flex-col">
-        {/* Success Toast */}
         {isSaved && (
-          <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-             <div className="bg-primary text-primary-foreground p-4 rounded-2xl shadow-xl flex items-center justify-center gap-3">
-               <CheckCircle2 size={24} />
-               <span className="font-bold text-lg">
-                 {loggedHours !== null ? `Logged ${loggedHours.toFixed(1)} hours!` : "Sleep safely logged!"}
+          <div className="fixed inset-x-4 top-20 z-50 max-w-md mx-auto">
+             <div className="bg-primary text-primary-foreground p-4 rounded-2xl flex items-center justify-center gap-2">
+               <CheckCircle2 size={20} strokeWidth={1.5} />
+               <span className="font-medium text-sm">
+                 {loggedHours !== null ? `Logged ${loggedHours.toFixed(1)} hours` : "Sleep logged"}
                </span>
              </div>
           </div>
         )}
 
-        {/* Error Toast */}
         {error && (
-          <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">{error}</div>
+          <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl mb-4">{error}</div>
         )}
 
         {activeTab === "toggle" ? (
-          <div className="flex-1 flex flex-col items-center justify-center -mt-20">
-            <div className={`w-64 h-64 rounded-full flex items-center justify-center transition-all duration-700 shadow-xl ${isSleeping ? 'bg-primary text-primary-foreground scale-105 shadow-primary/30' : 'bg-background text-primary border'}`}>
+          <div className="flex-1 flex flex-col items-center justify-center -mt-16">
+            <div className={`w-52 h-52 rounded-full flex items-center justify-center transition-all duration-500 ${isSleeping ? 'bg-primary text-primary-foreground' : 'border-2 border-border text-muted-foreground'}`}>
               <button 
                 onClick={handleToggle}
-                className="flex flex-col items-center justify-center w-full h-full gap-4 focus:outline-none rounded-full"
+                className="flex flex-col items-center justify-center w-full h-full gap-3 focus:outline-none rounded-full"
               >
                 {isSleeping ? (
                   <>
-                    <Square size={56} className="fill-current animate-pulse text-primary-foreground/80" />
-                    <span className="font-bold tracking-widest uppercase opacity-90 text-primary-foreground">Wake Up</span>
+                    <Square size={40} strokeWidth={1.5} className="text-primary-foreground/80" />
+                    <span className="font-medium text-xs tracking-widest uppercase text-primary-foreground/80">Wake Up</span>
                   </>
                 ) : (
                   <>
-                    <Moon size={56} className="fill-current text-primary" />
-                    <span className="font-bold tracking-widest uppercase opacity-80 text-primary">Go to Sleep</span>
+                    <Moon size={40} strokeWidth={1.5} />
+                    <span className="font-medium text-xs tracking-widest uppercase">Go to Sleep</span>
                   </>
                 )}
               </button>
             </div>
             
-            <div className="mt-12 text-center h-20">
+            <div className="mt-10 text-center h-16">
               {isSleeping && sleepStart ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4">
-                  <p className="text-muted-foreground font-bold tracking-tight">Fell asleep at</p>
-                  <p className="text-2xl font-extrabold text-foreground mt-1">
+                <div>
+                  <p className="text-muted-foreground text-xs font-medium">Fell asleep at</p>
+                  <p className="text-xl font-semibold mt-1">
                     {sleepStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               ) : (
-                <p className="text-muted-foreground font-medium max-w-[250px]">
+                <p className="text-muted-foreground text-sm font-medium max-w-[250px] leading-relaxed">
                   Tap the moon when you get in bed. Tap it again when you wake up.
                 </p>
               )}
             </div>
           </div>
         ) : (
-          <div className="animate-in fade-in flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col">
             <form onSubmit={handleManualSave} className="space-y-6 flex-1 flex flex-col">
-              <div className="bg-background border rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center text-center gap-4 py-8">
-                <div className="p-4 bg-primary/10 text-primary rounded-full mb-2">
-                  <Clock size={48} />
-                </div>
-                <h2 className="font-bold text-lg text-foreground">Forgot to toggle?</h2>
-                <p className="text-muted-foreground text-sm max-w-[250px]">
+              <div className="flex flex-col items-center text-center gap-3 py-8">
+                <Clock size={36} strokeWidth={1.5} className="text-muted-foreground mb-2" />
+                <h2 className="font-semibold text-base">Forgot to toggle?</h2>
+                <p className="text-muted-foreground text-sm max-w-[250px] leading-relaxed">
                   No worries. Enter your total sleep duration manually below.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="sleep-duration" className="text-sm font-semibold flex items-center gap-2 ml-1 text-foreground">
-                  <Moon size={18} className="text-primary" /> Duration (hours)
+                <label htmlFor="sleep-duration" className="text-xs font-medium text-muted-foreground ml-1">
+                  Duration (hours)
                 </label>
                 <Input 
                   id="sleep-duration"
@@ -176,13 +169,13 @@ export default function SleepTracker() {
                   placeholder="e.g. 7.5" 
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="text-lg font-bold h-16 bg-background"
+                  className="text-base font-medium h-14"
                 />
               </div>
 
-              <div className="pt-4 pb-6">
-                <Button type="submit" className="w-full h-16 text-lg shadow-xl shadow-primary/20 transition-colors">
-                  Submit Sleep Log
+              <div className="pt-4 pb-6 mt-auto">
+                <Button type="submit" className="w-full h-13">
+                  Done
                 </Button>
               </div>
             </form>

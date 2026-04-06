@@ -30,7 +30,6 @@ export default function AddFoodDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setName(initialName);
@@ -88,7 +87,7 @@ export default function AddFoodDialog({
               record.fatPer100g = payload.fat_per_100g;
               record.isStaple = payload.is_staple;
               record.mealContext = payload.meal_context || undefined;
-              record.userId = "auth-user"; // Sync will properly update this on next pull
+              record.userId = "auth-user";
             });
           });
         }
@@ -109,37 +108,34 @@ export default function AddFoodDialog({
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in"
+        className="fixed inset-0 z-50 bg-black/20"
         onClick={onClose}
       />
 
-      {/* Drawer */}
-      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto bg-background rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom-8 duration-300">
+      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto bg-background rounded-t-2xl">
         <div className="p-6 pb-8 max-h-[85vh] overflow-y-auto">
-          {/* Handle bar */}
-          <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-5" />
+          <div className="w-8 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-5" />
 
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-extrabold">Add to Food Library</h2>
+            <h2 className="text-base font-semibold">Add to Food Library</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-secondary rounded-full transition-colors"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-full transition-colors"
             >
-              <X size={20} />
+              <X size={18} strokeWidth={1.5} />
             </button>
           </div>
 
           {error && (
-            <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg mb-4">
+            <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl mb-4">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="food-name" className="text-sm font-bold ml-1">
+              <label htmlFor="food-name" className="text-xs font-medium text-muted-foreground ml-1">
                 Food Name
               </label>
               <Input
@@ -153,81 +149,53 @@ export default function AddFoodDialog({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold ml-1">
+              <label className="text-xs font-medium text-muted-foreground ml-1">
                 Nutrition per 100g
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Input
-                    type="number"
-                    placeholder="Calories"
-                    value={calories}
-                    onChange={(e) => setCalories(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                    kcal
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    placeholder="Protein"
-                    value={protein}
-                    onChange={(e) => setProtein(e.target.value)}
-                    className="pr-6"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                    g
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    placeholder="Carbs"
-                    value={carbs}
-                    onChange={(e) => setCarbs(e.target.value)}
-                    className="pr-6"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                    g
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    placeholder="Fat"
-                    value={fat}
-                    onChange={(e) => setFat(e.target.value)}
-                    className="pr-6"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                    g
-                  </span>
-                </div>
+                {[
+                  { placeholder: "Calories", value: calories, set: setCalories, unit: "kcal", required: true },
+                  { placeholder: "Protein", value: protein, set: setProtein, unit: "g", required: false },
+                  { placeholder: "Carbs", value: carbs, set: setCarbs, unit: "g", required: false },
+                  { placeholder: "Fat", value: fat, set: setFat, unit: "g", required: false },
+                ].map((field) => (
+                  <div key={field.placeholder} className="relative">
+                    <Input
+                      type="number"
+                      placeholder={field.placeholder}
+                      value={field.value}
+                      onChange={(e) => field.set(e.target.value)}
+                      required={field.required}
+                      className="pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                      {field.unit}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Staple Toggle */}
-            <div className="flex items-center justify-between bg-secondary/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between bg-secondary/50 rounded-xl p-4">
               <div className="flex items-center gap-2">
                 <Star
-                  size={16}
-                  className={isStaple ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}
+                  size={14}
+                  strokeWidth={1.5}
+                  className={isStaple ? "text-primary fill-primary" : "text-muted-foreground"}
                 />
-                <span className="text-sm font-bold">Mark as Staple</span>
+                <span className="text-sm font-medium">Mark as Staple</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsStaple(!isStaple)}
-                className={`w-12 h-7 rounded-full transition-colors relative ${
-                  isStaple ? "bg-primary" : "bg-muted-foreground/30"
+                className={`w-10 h-6 rounded-full transition-colors relative ${
+                  isStaple ? "bg-primary" : "bg-muted-foreground/20"
                 }`}
               >
                 <div
-                  className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                    isStaple ? "translate-x-5" : "translate-x-0.5"
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    isStaple ? "translate-x-4" : "translate-x-0.5"
                   }`}
                 />
               </button>
@@ -235,8 +203,8 @@ export default function AddFoodDialog({
 
             {/* Meal Context */}
             {isStaple && (
-              <div className="space-y-2 animate-in fade-in">
-                <label className="text-sm font-bold ml-1">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground ml-1">
                   Best for (optional)
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -247,7 +215,7 @@ export default function AddFoodDialog({
                       onClick={() =>
                         setMealContext(mealContext === ctx ? "" : ctx)
                       }
-                      className={`px-3.5 py-2 rounded-xl text-sm font-bold capitalize transition-all ${
+                      className={`px-3 py-2 rounded-full text-sm font-medium capitalize transition-all ${
                         mealContext === ctx
                           ? "bg-primary text-primary-foreground"
                           : "bg-secondary text-muted-foreground hover:bg-secondary/80"
@@ -260,10 +228,10 @@ export default function AddFoodDialog({
               </div>
             )}
 
-            <div className="sticky bottom-[-1px] bg-background pt-3 pb-2 mt-6 z-10 border-t border-border/40">
+            <div className="pt-4">
               <Button
                 type="submit"
-                className="w-full h-14 text-lg shadow-xl shadow-primary/20"
+                className="w-full h-13"
                 disabled={saving || !name.trim() || !calories}
               >
                 {saving ? "Saving..." : "Add to Library"}

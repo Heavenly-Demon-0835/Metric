@@ -10,28 +10,27 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     
-    // Simple custom variant logic using Tailwind
     const variants = {
-      default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
-      outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground shadow-sm",
-      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
+      default: "bg-primary text-primary-foreground hover:opacity-90",
+      destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
+      outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
       ghost: "hover:bg-accent hover:text-accent-foreground",
       link: "text-primary underline-offset-4 hover:underline",
     }
     
     const sizes = {
-      default: "h-12 px-5 py-3 rounded-2xl", // Mobile-friendly tall buttons
-      sm: "h-9 rounded-xl px-3",
-      lg: "h-14 rounded-2xl px-8",
-      icon: "h-10 w-10 rounded-xl",
+      default: "h-13 px-6 py-3 rounded-full",
+      sm: "h-9 rounded-full px-4",
+      lg: "h-14 rounded-full px-8",
+      icon: "h-10 w-10 rounded-full",
     }
 
     return (
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-base font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 active:opacity-80",
           variants[variant],
           sizes[size],
           className

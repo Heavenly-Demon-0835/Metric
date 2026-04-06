@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Activity, Dumbbell, Apple, Moon, Droplets } from "lucide-react";
+import { Dumbbell, Apple, Moon, Droplets, Activity } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_BASE, getAuthHeaders } from "@/lib/api";
@@ -37,79 +37,59 @@ export default function Dashboard() {
     fetchProfile();
   }, [router]);
 
+  const quickActions = [
+    { href: "/workouts/new", icon: Dumbbell, label: "Log Workout", colors: "bg-primary/10 text-primary" },
+    { href: "/diet/new", icon: Apple, label: "Add Meal", colors: "bg-emerald-100 text-emerald-600" },
+    { href: "/sleep", icon: Moon, label: "Sleep Tracker", colors: "bg-sky-100 text-sky-600" },
+    { href: "/cardio/new", icon: Activity, label: "Log Cardio", colors: "bg-primary/10 text-primary" },
+    { href: "/water", icon: Droplets, label: "Water Intake", colors: "bg-sky-100 text-sky-600" },
+  ];
+
   return (
-    <main className="flex flex-1 flex-col p-6 pb-8 bg-secondary/30 min-h-screen">
-      <header className="flex items-center justify-between mb-8 mt-2">
+    <main className="flex flex-1 flex-col px-8 py-6 min-h-screen">
+      <header className="flex items-center justify-between mb-10 mt-2">
         <div className="flex items-center gap-3">
           <HamburgerButton />
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              Hi, {profile ? profile.name.split(" ")[0] : "User"}!
+            <h1 className="text-xl font-semibold tracking-tight">
+              Hi, {profile ? profile.name.split(" ")[0] : "User"}
             </h1>
-            <p className="text-muted-foreground text-sm font-medium">
+            <p className="text-muted-foreground text-xs font-medium mt-0.5">
               Ready to crush it today?
             </p>
           </div>
         </div>
         <Link
           href="/profile"
-          className="h-12 w-12 rounded-full bg-primary/20 hover:bg-primary/30 active:scale-95 transition-all text-primary flex items-center justify-center font-bold text-xl ring-2 ring-primary/20 uppercase"
+          className="h-10 w-10 rounded-full bg-secondary text-foreground flex items-center justify-center font-semibold text-sm uppercase"
         >
           {profile && profile.name ? profile.name.charAt(0) : "U"}
         </Link>
       </header>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PlannerCard />
 
         <section>
-          <h2 className="text-lg font-bold mb-3 px-1">Quick Actions</h2>
+          <h2 className="text-xs font-medium text-muted-foreground mb-4 ml-1">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/workouts/new"
-              className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform"
-            >
-              <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <Dumbbell size={24} />
-              </div>
-              <span className="font-bold text-sm">Log Workout</span>
-            </Link>
-            <Link
-              href="/diet/new"
-              className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform"
-            >
-              <div className="h-12 w-12 rounded-full bg-[hsl(142,71%,45%)]/10 justify-center text-[hsl(142,71%,45%)] flex items-center">
-                <Apple size={24} />
-              </div>
-              <span className="font-bold text-sm">Add Meal</span>
-            </Link>
-            <Link
-              href="/sleep"
-              className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform"
-            >
-              <div className="h-12 w-12 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                <Moon size={24} />
-              </div>
-              <span className="font-bold text-sm">Sleep Tracker</span>
-            </Link>
-            <Link
-              href="/cardio/new"
-              className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform"
-            >
-              <div className="h-12 w-12 rounded-full bg-[hsl(38,92%,50%)]/10 text-[hsl(38,92%,50%)] flex items-center justify-center">
-                <Activity size={24} />
-              </div>
-              <span className="font-bold text-sm">Log Cardio</span>
-            </Link>
-            <Link
-              href="/water"
-              className="bg-card p-4 rounded-3xl shadow-sm border flex flex-col items-center justify-center text-center gap-2 active:scale-95 transition-transform col-span-2"
-            >
-              <div className="h-12 w-12 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center">
-                <Droplets size={24} />
-              </div>
-              <span className="font-bold text-sm">Water Intake</span>
-            </Link>
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className={`bg-secondary/50 p-5 rounded-2xl flex flex-col items-center justify-center text-center gap-2.5 active:opacity-80 transition-all ${
+                    action.label === "Water Intake" ? "col-span-2" : ""
+                  }`}
+                >
+                  <div className={`p-3 rounded-2xl ${action.colors}`}>
+                    <Icon size={24} strokeWidth={1.5} />
+                  </div>
+                  <span className="font-medium text-sm">{action.label}</span>
+                </Link>
+              );
+            })}
           </div>
         </section>
       </div>

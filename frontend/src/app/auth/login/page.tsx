@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE } from "@/lib/api";
@@ -40,7 +40,6 @@ export default function LoginPage() {
           const errData = await res.json();
           errorMsg = errData.detail || errorMsg;
         } catch {
-          // Response body was not JSON — use status text
           errorMsg = res.statusText || errorMsg;
         }
         throw new Error(errorMsg);
@@ -57,24 +56,22 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-1 flex-col p-6">
-      <header className="flex items-center justify-between mb-8 mt-2">
+    <main className="flex flex-1 flex-col px-8 py-6">
+      <header className="flex items-center mb-12 mt-2">
         <Link href="/" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-full">
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <Activity size={24} className="text-primary" />
-        <div className="w-10" />
       </header>
 
       <div className="flex-1 flex flex-col justify-center pb-20">
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Welcome Back</h1>
-        <p className="text-muted-foreground mb-8 text-lg">Sign in to resume tracking</p>
+        <h1 className="text-2xl font-semibold tracking-tight mb-2">Welcome Back</h1>
+        <p className="text-muted-foreground mb-10 text-sm">Sign in to resume tracking</p>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {error && <div className="p-3 bg-red-100 text-red-600 text-sm font-bold rounded-lg animate-in fade-in slide-in-from-top-2">{error}</div>}
+          {error && <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl">{error}</div>}
           
           <div className="space-y-2">
-            <label htmlFor="login-email" className="text-sm font-semibold text-foreground ml-1">Email</label>
+            <label htmlFor="login-email" className="text-xs font-medium text-muted-foreground ml-1">Email</label>
             <Input 
               id="login-email"
               type="email" 
@@ -86,7 +83,7 @@ export default function LoginPage() {
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="login-password" className="text-sm font-semibold text-foreground ml-1">Password</label>
+            <label htmlFor="login-password" className="text-xs font-medium text-muted-foreground ml-1">Password</label>
             <div className="relative">
               <Input 
                 id="login-password"
@@ -99,24 +96,24 @@ export default function LoginPage() {
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-[14px] text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
               </button>
             </div>
           </div>
           
-          <div className="pt-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+          <div className="pt-6">
+            <Button type="submit" className="w-full h-13" disabled={isLoading}>
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </div>
         </form>
 
-        <p className="text-center text-muted-foreground mt-8 text-base">
+        <p className="text-center text-muted-foreground mt-8 text-sm">
           Don't have an account?{" "}
-          <Link href="/auth/register" className="text-primary font-bold hover:underline">
+          <Link href="/auth/register" className="text-primary font-medium hover:underline">
             Get Started
           </Link>
         </p>
