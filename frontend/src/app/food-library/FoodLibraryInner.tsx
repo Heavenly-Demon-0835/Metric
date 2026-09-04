@@ -3,23 +3,17 @@
 import { useState, useEffect } from "react";
 import { Search, Plus, Star, Pencil, Trash2, X, Database } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend } from "@/lib/api";
 import AddFoodDialog from "@/components/AddFoodDialog";
-import { HamburgerButton } from "@/components/Sidebar";
 import { database } from "@/db";
+import { useLiveQuery } from "@/db/useLiveQuery";
 
 export default function FoodLibraryInner() {
-  const [foods, setFoods] = useState<any[]>([]);
+  const foods = useLiveQuery<any>("food_items");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!database) return;
-    const sub = database.collections.get("food_items").query().observe().subscribe(setFoods);
-    return () => sub.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -38,18 +32,14 @@ export default function FoodLibraryInner() {
         });
       });
 
-      fetch(`${API_BASE}/food-library/${food.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          name: food.name,
-          calories_per_100g: food.caloriesPer100g,
-          protein_per_100g: food.proteinPer100g,
-          carbs_per_100g: food.carbsPer100g,
-          fat_per_100g: food.fatPer100g,
-          is_staple: food.isStaple,
-          meal_context: food.mealContext,
-        }),
+      apiSend("PUT", `/food-library/${food.id}`, {
+        name: food.name,
+        calories_per_100g: food.caloriesPer100g,
+        protein_per_100g: food.proteinPer100g,
+        carbs_per_100g: food.carbsPer100g,
+        fat_per_100g: food.fatPer100g,
+        is_staple: food.isStaple,
+        meal_context: food.mealContext,
       }).catch(console.error);
     } catch (err) {
       console.error("Toggle staple failed:", err);
@@ -64,18 +54,14 @@ export default function FoodLibraryInner() {
         });
       });
 
-      fetch(`${API_BASE}/food-library/${food.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          name: food.name,
-          calories_per_100g: food.caloriesPer100g,
-          protein_per_100g: food.proteinPer100g,
-          carbs_per_100g: food.carbsPer100g,
-          fat_per_100g: food.fatPer100g,
-          is_staple: food.isStaple,
-          meal_context: food.mealContext,
-        }),
+      apiSend("PUT", `/food-library/${food.id}`, {
+        name: food.name,
+        calories_per_100g: food.caloriesPer100g,
+        protein_per_100g: food.proteinPer100g,
+        carbs_per_100g: food.carbsPer100g,
+        fat_per_100g: food.fatPer100g,
+        is_staple: food.isStaple,
+        meal_context: food.mealContext,
       }).catch(console.error);
     } catch (err) {
       console.error("Update meal context failed:", err);
@@ -88,20 +74,17 @@ export default function FoodLibraryInner() {
         await food.markAsDeleted();
       });
 
-      fetch(`${API_BASE}/food-library/${food.id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      }).catch(console.error);
+      apiSend("DELETE", `/food-library/${food.id}`).catch(console.error);
     } catch (err) {
       console.error("Delete failed:", err);
     }
   };
 
   return (
-    <main className="flex flex-col min-h-screen pb-6">
+    <main className="flex flex-col min-h-screen pb-28">
       <header className="flex items-center justify-between px-8 py-6 mt-2">
-        <HamburgerButton />
-        <h1 className="text-lg font-semibold tracking-tight">Food Library</h1>
+        <div className="w-10" />
+        <h1 className="text-lg font-bold tracking-tight">Food Library</h1>
         <div className="w-10" />
       </header>
 
@@ -196,10 +179,13 @@ export default function FoodLibraryInner() {
         )}
       </div>
 
-      <div className="sticky bottom-6 flex justify-end px-8 z-30 pointer-events-none mt-auto">
+      {/* Offset clears the floating tab pill (~63px tall, 0.75rem off the bottom)
+          plus the iPhone home indicator, so the FAB stays reachable once the
+          list is long enough to scroll. */}
+      <div className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom))] flex justify-end px-8 z-30 pointer-events-none mt-auto">
         <button
           onClick={() => setShowAdd(true)}
-          className="w-13 h-13 bg-primary text-primary-foreground rounded-full flex items-center justify-center active:opacity-80 transition-all pointer-events-auto"
+          className="w-13 h-13 grad-violet text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform pointer-events-auto"
         >
           <Plus size={22} strokeWidth={1.5} />
         </button>

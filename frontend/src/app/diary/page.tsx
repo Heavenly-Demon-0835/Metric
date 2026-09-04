@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronLeft, ChevronRight, Activity, Apple, Moon, Dumbbell, X, Trash2, Pencil, Eye, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiGet, apiSend } from "@/lib/api";
 import { parseAPIDate } from "@/lib/utils";
 
 interface RawEntry {
@@ -31,6 +31,7 @@ export default function Diary() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [entries, setEntries] = useState<RawEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
   const [detailEntry, setDetailEntry] = useState<RawEntry | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -55,26 +56,31 @@ export default function Diary() {
 
   const fetchEntries = useCallback(async () => {
     setIsLoading(true);
-    const headers = getAuthHeaders();
-    const all: RawEntry[] = [];
+    setLoadError(false);
     const monthParam = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
 
     try {
+      // Fail as a whole: a partially-loaded month reads as "you logged nothing"
+      // on the missing days, which is worse than an honest error state.
       const [workouts, cardio, sleep, diet] = await Promise.all([
-        fetch(`${API_BASE}/workouts/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/cardio/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/sleep/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch(`${API_BASE}/diet/?month=${monthParam}`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+        apiGet<any[]>(`/workouts/?month=${monthParam}`),
+        apiGet<any[]>(`/cardio/?month=${monthParam}`),
+        apiGet<any[]>(`/sleep/?month=${monthParam}`),
+        apiGet<any[]>(`/diet/?month=${monthParam}`),
       ]);
 
+      const all: RawEntry[] = [];
       workouts.forEach((w: any) => all.push({ ...w, type: "workout" }));
       cardio.forEach((c: any) => all.push({ ...c, type: "cardio" }));
       sleep.forEach((s: any) => all.push({ ...s, type: "sleep" }));
       diet.forEach((d: any) => all.push({ ...d, type: "diet" }));
-    } catch {}
-
-    setEntries(all);
-    setIsLoading(false);
+      setEntries(all);
+    } catch (err) {
+      console.error("Failed to load diary:", err);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
   }, [currentDate]);
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
@@ -168,40 +174,38 @@ export default function Diary() {
     if (!detailEntry) return;
     setActionLoading(true);
     try {
-      const endpoint = `${API_BASE}/${detailEntry.type === "workout" ? "workouts" : detailEntry.type}/${detailEntry._id}`;
-      const res = await fetch(endpoint, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify(editData),
-      });
-      if (!res.ok) throw new Error("Failed to update");
+      const path = `/${detailEntry.type === "workout" ? "workouts" : detailEntry.type}/${detailEntry._id}`;
+      await apiSend("PUT", path, editData);
       setDetailEntry(null);
       setIsEditing(false);
       await fetchEntries();
-    } catch {}
+    } catch (err) {
+      console.error("Failed to update entry:", err);
+    }
     setActionLoading(false);
   };
 
   const deleteEntry = async (id: string, type: string) => {
     setActionLoading(true);
     try {
-      const endpoint = `${API_BASE}/${type === "workout" ? "workouts" : type}/${id}`;
-      const res = await fetch(endpoint, { method: "DELETE", headers: getAuthHeaders() });
-      if (!res.ok) throw new Error("Failed to delete");
+      const path = `/${type === "workout" ? "workouts" : type}/${id}`;
+      await apiSend("DELETE", path);
       setDetailEntry(null);
       setDeleteConfirm(null);
       await fetchEntries();
-    } catch {}
+    } catch (err) {
+      console.error("Failed to delete entry:", err);
+    }
     setActionLoading(false);
   };
 
   return (
-    <main className="flex flex-col min-h-screen pb-20">
+    <main className="flex flex-col min-h-screen pb-28">
       <header className="flex items-center justify-between px-8 py-6 mt-2">
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Diary</h1>
+        <h1 className="text-lg font-bold tracking-tight">Diary</h1>
         <button
           onClick={() => { setCurrentDate(new Date()); setSelectedDay(new Date().getDate()); }}
           className="text-primary font-medium text-xs"
@@ -210,7 +214,7 @@ export default function Diary() {
 
       {/* Calendar Header */}
       <div className="px-8 py-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+        <h2 className="text-xl font-bold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
         <div className="flex gap-2">
           <button onClick={prevMonth} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">
             <ChevronLeft size={18} strokeWidth={1.5} />
@@ -234,7 +238,7 @@ export default function Diary() {
             return (
               <button key={d} onClick={() => setSelectedDay(d)}
                 className={`relative flex flex-col items-center justify-center h-11 rounded-xl transition-all text-sm font-medium
-                  ${isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary text-foreground'}`}>
+                  ${isSelected ? 'grad-violet text-white shadow-md shadow-primary/30' : 'hover:bg-secondary text-foreground'}`}>
                 {d}
                 {hasActivity && <div className={`w-1 h-1 rounded-full absolute bottom-1 ${isSelected ? 'bg-primary-foreground' : 'bg-primary'}`} />}
               </button>
@@ -253,6 +257,12 @@ export default function Diary() {
           <div className="flex flex-col items-center justify-center py-10">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-muted-foreground text-sm font-medium">Loading...</p>
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground text-sm font-medium mb-1">Couldn&apos;t load your diary</p>
+            <p className="text-xs text-muted-foreground mb-4">Check your connection and try again.</p>
+            <Button variant="outline" size="sm" onClick={fetchEntries}>Retry</Button>
           </div>
         ) : Object.keys(grouped).length > 0 ? (
           <div className="space-y-6">

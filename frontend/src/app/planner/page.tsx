@@ -4,12 +4,12 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Target, Trash2, CheckCircle2, Circle, Plus, X } from "lucide-react";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend, getToken } from "@/lib/api";
 import ProgressRing from "@/components/ProgressRing";
 import GoalSetter from "@/components/GoalSetter";
-import { HamburgerButton } from "@/components/Sidebar";
 import { Input } from "@/components/ui/input";
 import { database } from "@/db";
+import { useLiveQuery } from "@/db/useLiveQuery";
 
 interface ChecklistItem {
   id: string;
@@ -27,36 +27,21 @@ const GOAL_META: Record<string, { icon: string; color: string; unit: string; lab
 export default function PlannerPage() {
   const router = useRouter();
 
-  const [goals, setGoals] = useState<any[]>([]);
-  const [diets, setDiets] = useState<any[]>([]);
-  const [waterLogs, setWaterLogs] = useState<any[]>([]);
-  const [workouts, setWorkouts] = useState<any[]>([]);
+  const goals = useLiveQuery<any>("daily_goals");
+  const diets = useLiveQuery<any>("diet");
+  const waterLogs = useLiveQuery<any>("water_logs");
+  const workouts = useLiveQuery<any>("workouts");
   const [loading, setLoading] = useState(true);
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newItem, setNewItem] = useState("");
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (!token) { router.replace("/auth/login"); return; }
+    if (!getToken()) { router.replace("/auth/login"); return; }
   }, [router]);
 
   useEffect(() => {
-    if (!database) { setLoading(false); return; }
-
-    const subG = database.collections.get("daily_goals").query().observe().subscribe(setGoals);
-    const subD = database.collections.get("diet").query().observe().subscribe(setDiets);
-    const subW = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
-    const subWk = database.collections.get("workouts").query().observe().subscribe(setWorkouts);
-
     setLoading(false);
-
-    return () => {
-      subG.unsubscribe();
-      subD.unsubscribe();
-      subW.unsubscribe();
-      subWk.unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
@@ -103,7 +88,7 @@ export default function PlannerPage() {
   }, [diets, waterLogs, workouts]);
 
   const deleteGoal = async (id: string) => {
-    await fetch(`${API_BASE}/goals/${id}`, { method: "DELETE", headers: getAuthHeaders() }).catch(() => {});
+    await apiSend("DELETE", `/goals/${id}`).catch(() => {});
     try {
       if (database) {
         await database.write(async () => {
@@ -143,10 +128,10 @@ export default function PlannerPage() {
   const onGoalCreated = () => {};
 
   return (
-    <main className="flex flex-col min-h-screen pb-8">
+    <main className="flex flex-col min-h-screen pb-28">
       <header className="flex items-center justify-between px-8 py-6 mt-2">
-        <HamburgerButton />
-        <h1 className="text-lg font-semibold tracking-tight">Daily Planner</h1>
+        <div className="w-10" />
+        <h1 className="text-lg font-bold tracking-tight">Daily Planner</h1>
         <Link href="/dashboard" className="text-primary text-xs font-medium">
           Dashboard
         </Link>

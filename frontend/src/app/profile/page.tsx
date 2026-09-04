@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiGet, getToken, clearToken } from "@/lib/api";
 
 export default function Profile() {
   const router = useRouter();
@@ -14,27 +14,14 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
+      if (!getToken()) {
         router.push("/auth/login");
         return;
       }
 
       try {
-        const res = await fetch(`${API_BASE}/users/me`, {
-          headers: getAuthHeaders()
-        });
-
-        if (!res.ok) {
-          if (res.status === 401) {
-            localStorage.removeItem("token");
-            router.push("/auth/login");
-          }
-          throw new Error("Failed to fetch profile");
-        }
-
-        const data = await res.json();
-        setProfile(data);
+        // A 401 here is handled globally (token cleared, redirect to login).
+        setProfile(await apiGet("/users/me"));
       } catch (err) {
         console.error(err);
       } finally {
@@ -46,7 +33,7 @@ export default function Profile() {
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearToken();
     router.push("/auth/login");
   };
 
@@ -69,7 +56,7 @@ export default function Profile() {
   ];
 
   return (
-    <main className="flex flex-col min-h-screen px-8 py-6 pb-24">
+    <main className="flex flex-col min-h-screen px-8 py-6 pb-28">
       <header className="flex items-center mb-10 mt-2">
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-full transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
@@ -77,10 +64,10 @@ export default function Profile() {
       </header>
 
       <div className="flex flex-col items-center mb-12">
-        <div className="h-20 w-20 rounded-full bg-secondary text-foreground flex items-center justify-center font-semibold text-2xl mb-4 uppercase">
+        <div className="h-20 w-20 rounded-full grad-violet text-white flex items-center justify-center font-bold text-2xl mb-4 uppercase shadow-lg shadow-primary/30">
           {profile.name ? profile.name.charAt(0) : "U"}
         </div>
-        <h2 className="text-xl font-semibold">{profile.name || "App User"}</h2>
+        <h2 className="text-xl font-bold">{profile.name || "App User"}</h2>
         <p className="text-muted-foreground text-sm mt-1">{profile.email}</p>
       </div>
 
