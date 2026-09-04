@@ -1,9 +1,17 @@
-fastapi
-uvicorn[standard]
-motor
-pydantic[email]
-PyJWT>=2.0.0
-bcrypt>=4.0.0
-python-multipart
-python-dotenv
-httpx
+# Pinned to the versions verified working together. Unpinned, a rebuild resolves
+# whatever is latest that day — motor in particular is in maintenance mode and
+# is superseded upstream by pymongo's own AsyncMongoClient.
+fastapi==0.139.2
+uvicorn[standard]==0.51.0
+motor==3.7.1
+pymongo==4.17.0
+# Required for mongodb+srv:// URIs; previously only a transitive dependency.
+dnspython==2.8.0
+# Pinned CA bundle passed to the Mongo client in database.py.
+certifi==2026.6.17
+pydantic[email]==2.13.4
+PyJWT==2.13.0
+bcrypt==5.0.0
+python-multipart==0.0.32
+python-dotenv==1.2.2
+httpx==0.28.1
