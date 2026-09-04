@@ -1,16 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from bson import ObjectId
+"""CRUD endpoints for the activity domains.
+
+All five domains share one implementation: they differ only in their path,
+collection and Pydantic model. Keeping the behaviour in one place is what makes
+the sync contract (timestamps on write, soft deletes) provably consistent
+across them.
+"""
+
 from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
 from database import db
-from models import CardioSession, SleepLog, WaterLog, WorkoutSession, DietLog
+from models import CardioSession, DietLog, SleepLog, WaterLog, WorkoutSession
 from routers.auth import get_current_user
+from utils import active_filter, now_ms, oid, stamp_created, stamp_updated
 
 router = APIRouter(tags=["activities"])
 
 
-def _date_filter(user_id: str, month: str | None = None):
+def _date_filter(user_id: str, month: str | None = None) -> dict:
     """Build a MongoDB query filter. If month is 'YYYY-MM', restrict to that month."""
-    q: dict = {"user_id": user_id}
+    q = active_filter()
+    q["user_id"] = user_id
     if month:
         try:
             year, mon = month.split("-")
@@ -26,171 +38,74 @@ def _date_filter(user_id: str, month: str | None = None):
     return q
 
 
-# --- CARDIO ---
-@router.post("/cardio", response_model=str)
-@router.post("/cardio/", response_model=str, include_in_schema=False)
-async def create_cardio(cardio: CardioSession, user=Depends(get_current_user)):
-    cardio.user_id = str(user["_id"])
-    result = await db.cardio.insert_one(cardio.model_dump())
-    return str(result.inserted_id)
+def _register(path: str, collection: str, model: type[BaseModel], *, updatable: bool = True) -> None:
+    """Register the standard CRUD surface for one activity domain.
 
-@router.get("/cardio")
-@router.get("/cardio/", include_in_schema=False)
-async def get_cardio(user=Depends(get_current_user), month: str | None = Query(None)):
-    sessions = []
-    cursor = db.cardio.find(_date_filter(str(user["_id"]), month)).sort("date", -1)
-    async for document in cursor:
-        document["_id"] = str(document["_id"])
-        sessions.append(document)
-    return sessions
+    Both the bare and trailing-slash paths are registered so the frontend never
+    hits a 307 redirect, which browsers handle poorly on cross-origin POSTs.
+    """
 
-@router.put("/cardio/{entry_id}")
-async def update_cardio(entry_id: str, cardio: CardioSession, user=Depends(get_current_user)):
-    uid = str(user["_id"])
-    existing = await db.cardio.find_one({"_id": ObjectId(entry_id), "user_id": uid})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    data = cardio.model_dump()
-    data["user_id"] = uid
-    await db.cardio.replace_one({"_id": ObjectId(entry_id)}, data)
-    return {"status": "updated"}
+    async def create(payload: model, user=Depends(get_current_user)):
+        data = payload.model_dump()
+        data["user_id"] = str(user["_id"])
+        result = await db[collection].insert_one(stamp_created(data))
+        return str(result.inserted_id)
 
-@router.delete("/cardio/{entry_id}")
-async def delete_cardio(entry_id: str, user=Depends(get_current_user)):
-    result = await db.cardio.delete_one({"_id": ObjectId(entry_id), "user_id": str(user["_id"])})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"status": "deleted"}
+    async def list_entries(user=Depends(get_current_user), month: str | None = Query(None)):
+        entries = []
+        cursor = db[collection].find(_date_filter(str(user["_id"]), month)).sort("date", -1)
+        async for document in cursor:
+            document["_id"] = str(document["_id"])
+            entries.append(document)
+        return entries
 
-# --- SLEEP ---
-@router.post("/sleep", response_model=str)
-@router.post("/sleep/", response_model=str, include_in_schema=False)
-async def create_sleep(sleep_log: SleepLog, user=Depends(get_current_user)):
-    sleep_log.user_id = str(user["_id"])
-    result = await db.sleep.insert_one(sleep_log.model_dump())
-    return str(result.inserted_id)
+    async def update(entry_id: str, payload: model, user=Depends(get_current_user)):
+        uid = str(user["_id"])
+        key = {"_id": oid(entry_id), "user_id": uid}
+        existing = await db[collection].find_one({**key, **active_filter()})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Entry not found")
+        data = payload.model_dump()
+        data["user_id"] = uid
+        # replace_one drops anything absent from the model, so carry the
+        # creation time forward or the record looks new to the next sync pull.
+        data["created_at"] = existing.get("created_at", now_ms())
+        await db[collection].replace_one(key, stamp_updated(data))
+        return {"status": "updated"}
 
-@router.get("/sleep")
-@router.get("/sleep/", include_in_schema=False)
-async def get_sleep(user=Depends(get_current_user), month: str | None = Query(None)):
-    logs = []
-    cursor = db.sleep.find(_date_filter(str(user["_id"]), month)).sort("date", -1)
-    async for document in cursor:
-        document["_id"] = str(document["_id"])
-        logs.append(document)
-    return logs
+    async def delete(entry_id: str, user=Depends(get_current_user)):
+        # Soft delete: the tombstone is what tells other devices the row is
+        # gone. A hard delete lets an offline client resurrect it on next push.
+        ts = now_ms()
+        result = await db[collection].update_one(
+            {"_id": oid(entry_id), "user_id": str(user["_id"]), **active_filter()},
+            {"$set": {"deleted_at": ts, "updated_at": ts}},
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Entry not found")
+        return {"status": "deleted"}
 
-@router.put("/sleep/{entry_id}")
-async def update_sleep(entry_id: str, sleep_log: SleepLog, user=Depends(get_current_user)):
-    uid = str(user["_id"])
-    existing = await db.sleep.find_one({"_id": ObjectId(entry_id), "user_id": uid})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    data = sleep_log.model_dump()
-    data["user_id"] = uid
-    await db.sleep.replace_one({"_id": ObjectId(entry_id)}, data)
-    return {"status": "updated"}
+    for route, hidden in ((f"/{path}", False), (f"/{path}/", True)):
+        router.add_api_route(
+            route, create, methods=["POST"], response_model=str,
+            name=f"create_{path}", include_in_schema=not hidden,
+        )
+        router.add_api_route(
+            route, list_entries, methods=["GET"],
+            name=f"list_{path}", include_in_schema=not hidden,
+        )
 
-@router.delete("/sleep/{entry_id}")
-async def delete_sleep(entry_id: str, user=Depends(get_current_user)):
-    result = await db.sleep.delete_one({"_id": ObjectId(entry_id), "user_id": str(user["_id"])})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"status": "deleted"}
+    if updatable:
+        router.add_api_route(
+            f"/{path}/{{entry_id}}", update, methods=["PUT"], name=f"update_{path}",
+        )
+    router.add_api_route(
+        f"/{path}/{{entry_id}}", delete, methods=["DELETE"], name=f"delete_{path}",
+    )
 
-# --- WATER ---
-@router.post("/water", response_model=str)
-@router.post("/water/", response_model=str, include_in_schema=False)
-async def create_water(water_log: WaterLog, user=Depends(get_current_user)):
-    water_log.user_id = str(user["_id"])
-    result = await db.water.insert_one(water_log.model_dump())
-    return str(result.inserted_id)
 
-@router.get("/water")
-@router.get("/water/", include_in_schema=False)
-async def get_water(user=Depends(get_current_user), month: str | None = Query(None)):
-    logs = []
-    cursor = db.water.find(_date_filter(str(user["_id"]), month)).sort("date", -1)
-    async for document in cursor:
-        document["_id"] = str(document["_id"])
-        logs.append(document)
-    return logs
-
-@router.delete("/water/{entry_id}")
-async def delete_water(entry_id: str, user=Depends(get_current_user)):
-    result = await db.water.delete_one({"_id": ObjectId(entry_id), "user_id": str(user["_id"])})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"status": "deleted"}
-
-# --- WORKOUTS ---
-@router.post("/workouts", response_model=str)
-@router.post("/workouts/", response_model=str, include_in_schema=False)
-async def create_workout(workout: WorkoutSession, user=Depends(get_current_user)):
-    workout.user_id = str(user["_id"])
-    result = await db.workouts.insert_one(workout.model_dump())
-    return str(result.inserted_id)
-
-@router.get("/workouts")
-@router.get("/workouts/", include_in_schema=False)
-async def get_workouts(user=Depends(get_current_user), month: str | None = Query(None)):
-    workouts = []
-    cursor = db.workouts.find(_date_filter(str(user["_id"]), month)).sort("date", -1)
-    async for document in cursor:
-        document["_id"] = str(document["_id"])
-        workouts.append(document)
-    return workouts
-
-@router.put("/workouts/{entry_id}")
-async def update_workout(entry_id: str, workout: WorkoutSession, user=Depends(get_current_user)):
-    uid = str(user["_id"])
-    existing = await db.workouts.find_one({"_id": ObjectId(entry_id), "user_id": uid})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    data = workout.model_dump()
-    data["user_id"] = uid
-    await db.workouts.replace_one({"_id": ObjectId(entry_id)}, data)
-    return {"status": "updated"}
-
-@router.delete("/workouts/{entry_id}")
-async def delete_workout(entry_id: str, user=Depends(get_current_user)):
-    result = await db.workouts.delete_one({"_id": ObjectId(entry_id), "user_id": str(user["_id"])})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"status": "deleted"}
-
-# --- DIET ---
-@router.post("/diet", response_model=str)
-@router.post("/diet/", response_model=str, include_in_schema=False)
-async def create_diet(diet_log: DietLog, user=Depends(get_current_user)):
-    diet_log.user_id = str(user["_id"])
-    result = await db.diet.insert_one(diet_log.model_dump())
-    return str(result.inserted_id)
-
-@router.get("/diet")
-@router.get("/diet/", include_in_schema=False)
-async def get_diet(user=Depends(get_current_user), month: str | None = Query(None)):
-    logs = []
-    cursor = db.diet.find(_date_filter(str(user["_id"]), month)).sort("date", -1)
-    async for document in cursor:
-        document["_id"] = str(document["_id"])
-        logs.append(document)
-    return logs
-
-@router.put("/diet/{entry_id}")
-async def update_diet(entry_id: str, diet_log: DietLog, user=Depends(get_current_user)):
-    uid = str(user["_id"])
-    existing = await db.diet.find_one({"_id": ObjectId(entry_id), "user_id": uid})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    data = diet_log.model_dump()
-    data["user_id"] = uid
-    await db.diet.replace_one({"_id": ObjectId(entry_id)}, data)
-    return {"status": "updated"}
-
-@router.delete("/diet/{entry_id}")
-async def delete_diet(entry_id: str, user=Depends(get_current_user)):
-    result = await db.diet.delete_one({"_id": ObjectId(entry_id), "user_id": str(user["_id"])})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    return {"status": "deleted"}
+_register("cardio", "cardio", CardioSession)
+_register("sleep", "sleep", SleepLog)
+_register("water", "water", WaterLog, updatable=False)
+_register("workouts", "workouts", WorkoutSession)
+_register("diet", "diet", DietLog)

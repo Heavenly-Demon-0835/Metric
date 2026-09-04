@@ -56,7 +56,8 @@ class FoodItem(BaseModel):
     fat_per_100g: float = 0
     is_staple: bool = False
     meal_context: Optional[str] = None  # "breakfast" | "lunch" | "dinner" | "snack"
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # created_at/updated_at are stamped as epoch ms by the write helpers in
+    # utils.py so they match what the sync layer exchanges with the client.
 
 
 class DailyGoal(BaseModel):

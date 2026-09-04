@@ -1,8 +1,13 @@
-import httpx
 import asyncio
+import logging
 import os
+
+import httpx
 from fastapi import APIRouter, Depends, Query
+
 from routers.auth import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/discovery", tags=["discovery"])
 
@@ -12,21 +17,40 @@ router = APIRouter(prefix="/discovery", tags=["discovery"])
 # The DEMO_KEY works but has aggressive rate limits (30 req/hour).
 USDA_API_KEY = os.getenv("USDA_API_KEY", "DEMO_KEY")
 
+USDA_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
+OFF_URL = "https://world.openfoodfacts.org/api/v2/search"
+WGER_URL = "https://wger.de/api/v2/exercise/search/"
+
+
+def _truncate(text: str, limit: int = 50) -> str:
+    return text[:limit] + "..." if len(text) > limit else text
+
+
 @router.get("/food")
 async def search_food(q: str = Query(..., min_length=2), user=Depends(get_current_user)):
-    # Run USDA and Open Food Facts in parallel
+    # Search terms go through `params` so httpx escapes them; interpolating
+    # them into the URL would let a query string smuggle in extra parameters.
     async with httpx.AsyncClient() as client:
-        usda_url = f"https://api.nal.usda.gov/fdc/v1/foods/search?api_key={USDA_API_KEY}&query={q}"
-        off_url = f"https://world.openfoodfacts.org/api/v2/search?search_terms={q}&fields=id,product_name,brands,nutriments&page_size=10"
-        
-        usda_task = client.get(usda_url, timeout=5.0)
-        off_task = client.get(off_url, timeout=5.0)
-        
+        usda_task = client.get(
+            USDA_URL,
+            params={"api_key": USDA_API_KEY, "query": q},
+            timeout=5.0,
+        )
+        off_task = client.get(
+            OFF_URL,
+            params={
+                "search_terms": q,
+                "fields": "id,product_name,brands,nutriments",
+                "page_size": 10,
+            },
+            timeout=5.0,
+        )
+
         results = []
-        
+
         try:
             usda_res, off_res = await asyncio.gather(usda_task, off_task, return_exceptions=True)
-            
+
             # Parse USDA
             if isinstance(usda_res, httpx.Response) and usda_res.status_code == 200:
                 data = usda_res.json()
@@ -39,10 +63,10 @@ async def search_food(q: str = Query(..., min_length=2), user=Depends(get_curren
                         elif "protein" in name: macros["protein"] = val
                         elif "carbohydrate" in name: macros["carbs"] = val
                         elif "lipid" in name or "fat" in name: macros["fat"] = val
-                        
+
                     results.append({
                         "id": f"usda_{item.get('fdcId')}",
-                        "name": item.get("description", "").title()[:50] + ("..." if len(item.get("description", "")) > 50 else ""),
+                        "name": _truncate(item.get("description", "").title()),
                         "brand": item.get("brandOwner", "USDA (Raw)"),
                         "calories_per_100g": round(macros["calories"], 1),
                         "protein_per_100g": round(macros["protein"], 1),
@@ -50,7 +74,7 @@ async def search_food(q: str = Query(..., min_length=2), user=Depends(get_curren
                         "fat_per_100g": round(macros["fat"], 1),
                         "source": "USDA FoodData"
                     })
-                    
+
             # Parse Open Food Facts
             if isinstance(off_res, httpx.Response) and off_res.status_code == 200:
                 data = off_res.json()
@@ -60,7 +84,7 @@ async def search_food(q: str = Query(..., min_length=2), user=Depends(get_curren
                     if "energy-kcal_100g" in nut:
                         results.append({
                             "id": f"off_{item.get('id')}",
-                            "name": item.get("product_name", "Unknown Product").title()[:50] + ("..." if len(item.get("product_name", "")) > 50 else ""),
+                            "name": _truncate(item.get("product_name", "Unknown Product").title()),
                             "brand": item.get("brands", "Open Food Facts"),
                             "calories_per_100g": round(nut.get("energy-kcal_100g", 0), 1),
                             "protein_per_100g": round(nut.get("proteins_100g", 0), 1),
@@ -68,34 +92,32 @@ async def search_food(q: str = Query(..., min_length=2), user=Depends(get_curren
                             "fat_per_100g": round(nut.get("fat_100g", 0), 1),
                             "source": "Open Food Facts"
                         })
-        except Exception as e:
-            print(f"Discovery proxy error: {e}")
-            
+        except Exception:
+            logger.exception("Food discovery proxy failed for query %r", q)
+
         return results
+
 
 @router.get("/exercise")
 async def search_exercise(q: str = Query(..., min_length=2), user=Depends(get_current_user)):
     async with httpx.AsyncClient() as client:
-        # Wger API v2 search endpoint
-        wger_url = f"https://wger.de/api/v2/exercise/search/?term={q}"
         try:
-            res = await client.get(wger_url, timeout=5.0)
-            if res.status_code == 200:
-                data = res.json()
-                results = []
-                for idx, item in enumerate(data.get("suggestions", [])[:10]):
-                    value = item.get("value", "")
-                    data_obj = item.get("data", {})
-                    category = data_obj.get("category", "Exercise")
-                    # Wger categories are usually strings in this endpoint response
-                    results.append({
-                        "id": f"wger_{data_obj.get('id', idx)}",
-                        "name": value if value else "Unknown Exercise",
-                        "category": category,
-                        "source": "Wger API",
-                    })
-                return results
-            return []
-        except Exception as e:
-            print(f"Wger discovery error: {e}")
+            res = await client.get(WGER_URL, params={"term": q}, timeout=5.0)
+            if res.status_code != 200:
+                return []
+            data = res.json()
+            results = []
+            for idx, item in enumerate(data.get("suggestions", [])[:10]):
+                value = item.get("value", "")
+                data_obj = item.get("data", {})
+                # Wger categories are usually strings in this endpoint response
+                results.append({
+                    "id": f"wger_{data_obj.get('id', idx)}",
+                    "name": value if value else "Unknown Exercise",
+                    "category": data_obj.get("category", "Exercise"),
+                    "source": "Wger API",
+                })
+            return results
+        except Exception:
+            logger.exception("Exercise discovery proxy failed for query %r", q)
             return []
