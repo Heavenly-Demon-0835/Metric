@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, Activity, Timer, Navigation, Play, Square, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend } from "@/lib/api";
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), { ssr: false });
 
@@ -95,17 +95,12 @@ export default function NewCardio() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/cardio/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          duration_minutes: Math.round(elapsedSec / 60),
-          distance_km: parseFloat(gpsDistance.toFixed(2)),
-          activity_type: activityType,
-          route_coords: coords,
-        }),
+      await apiSend("POST", "/cardio/", {
+        duration_minutes: Math.round(elapsedSec / 60),
+        distance_km: parseFloat(gpsDistance.toFixed(2)),
+        activity_type: activityType,
+        route_coords: coords,
       });
-      if (!res.ok) throw new Error("Failed to save cardio session");
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -149,16 +144,11 @@ export default function NewCardio() {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/cardio/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          duration_minutes: parseInt(duration) || 0,
-          distance_km: parseFloat(distance) || 0,
-          activity_type: activityType,
-        }),
+      await apiSend("POST", "/cardio/", {
+        duration_minutes: parseInt(duration) || 0,
+        distance_km: parseFloat(distance) || 0,
+        activity_type: activityType,
       });
-      if (!res.ok) throw new Error("Failed to save cardio session");
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -173,7 +163,7 @@ export default function NewCardio() {
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Log Cardio</h1>
+        <h1 className="text-lg font-bold tracking-tight">Log Cardio</h1>
         <div className="w-10" />
       </header>
 
@@ -185,7 +175,7 @@ export default function NewCardio() {
             onClick={() => setActivityType(type)}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-medium transition-all border ${
               activityType === type
-                ? "bg-primary text-primary-foreground border-primary"
+                ? "grad-fuchsia text-white border-transparent shadow-lg shadow-fuchsia-500/25"
                 : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
             }`}
           >

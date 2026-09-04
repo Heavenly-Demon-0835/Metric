@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Moon, Square, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend } from "@/lib/api";
 
 export default function SleepTracker() {
   const [activeTab, setActiveTab] = useState<"toggle" | "manual">("toggle");
@@ -21,12 +21,7 @@ export default function SleepTracker() {
   const saveSleepLog = async (hours: number): Promise<boolean> => {
     setError("");
     try {
-      const res = await fetch(`${API_BASE}/sleep/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ duration_hours: hours }),
-      });
-      if (!res.ok) throw new Error("Failed to save sleep log");
+      await apiSend("POST", "/sleep/", { duration_hours: hours });
       setLoggedHours(hours);
       setIsSaved(true);
       setTimeout(() => {
@@ -75,7 +70,7 @@ export default function SleepTracker() {
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Sleep Tracker</h1>
+        <h1 className="text-lg font-bold tracking-tight">Sleep Tracker</h1>
         <div className="w-10" />
       </header>
 
@@ -113,7 +108,7 @@ export default function SleepTracker() {
 
         {activeTab === "toggle" ? (
           <div className="flex-1 flex flex-col items-center justify-center -mt-16">
-            <div className={`w-52 h-52 rounded-full flex items-center justify-center transition-all duration-500 ${isSleeping ? 'bg-primary text-primary-foreground' : 'border-2 border-border text-muted-foreground'}`}>
+            <div className={`w-52 h-52 rounded-full flex items-center justify-center transition-all duration-500 ${isSleeping ? 'grad-indigo text-white shadow-xl shadow-indigo-500/30' : 'border-2 border-border text-muted-foreground'}`}>
               <button 
                 onClick={handleToggle}
                 className="flex flex-col items-center justify-center w-full h-full gap-3 focus:outline-none rounded-full"

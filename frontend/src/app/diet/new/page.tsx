@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiFetch, apiGet, apiSend } from "@/lib/api";
 import {
   calculateMacros,
   evaluateWeightExpression,
@@ -62,10 +62,7 @@ export default function NewDietEntry() {
 
   useEffect(() => {
     const ctx = getMealContext();
-    fetch(`${API_BASE}/food-library/staples?context=${ctx}`, {
-      headers: getAuthHeaders(),
-    })
-      .then((res) => (res.ok ? res.json() : []))
+    apiGet<FoodItemData[]>(`/food-library/staples?context=${ctx}`)
       .then(setStaples)
       .catch(() => {});
   }, []);
@@ -77,11 +74,10 @@ export default function NewDietEntry() {
     }
     const timer = setTimeout(async () => {
       try {
-        const endpoint = isGlobalSearch
-          ? `${API_BASE}/discovery/food?q=${encodeURIComponent(searchQuery)}`
-          : `${API_BASE}/food-library/search?q=${encodeURIComponent(searchQuery)}`;
-        const res = await fetch(endpoint, { headers: getAuthHeaders() });
-        if (res.ok) setSearchResults(await res.json());
+        const path = isGlobalSearch
+          ? `/discovery/food?q=${encodeURIComponent(searchQuery)}`
+          : `/food-library/search?q=${encodeURIComponent(searchQuery)}`;
+        setSearchResults(await apiGet(path));
       } catch {}
     }, 300);
     return () => clearTimeout(timer);
@@ -130,9 +126,10 @@ export default function NewDietEntry() {
         fat_per_100g: food.fat_per_100g,
         is_staple: false,
       };
-      const res = await fetch(`${API_BASE}/food-library/`, {
+      // 409 means it's already in the library — either way we can select it.
+      const res = await apiFetch(`/food-library/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (res.ok || res.status === 409) {
@@ -202,13 +199,7 @@ export default function NewDietEntry() {
 
       if (supplements.length > 0) payload.supplements = supplements;
 
-      const res = await fetch(`${API_BASE}/diet/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to save diet entry");
+      await apiSend("POST", "/diet/", payload);
       router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -226,7 +217,7 @@ export default function NewDietEntry() {
         >
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Log a Meal</h1>
+        <h1 className="text-lg font-bold tracking-tight">Log a Meal</h1>
         <div className="w-10" />
       </header>
 

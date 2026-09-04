@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import type { FoodItemData } from "@/lib/macros";
 
 interface AddFoodDialogProps {
@@ -59,9 +59,9 @@ export default function AddFoodDialog({
     };
 
     try {
-      const res = await fetch(`${API_BASE}/food-library/`, {
+      const res = await apiFetch(`/food-library/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 

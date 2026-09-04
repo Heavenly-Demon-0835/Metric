@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend } from "@/lib/api";
 
 interface GoalSetterProps {
   onCreated: () => void;
@@ -29,39 +29,33 @@ export default function GoalSetter({ onCreated }: GoalSetterProps) {
     if (!selected || !targetValue) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/goals/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({
-          metric_type: selected,
-          target_value: parseFloat(targetValue),
-          frequency: "daily",
-        }),
+      const insertedId = await apiSend<string>("POST", "/goals/", {
+        metric_type: selected,
+        target_value: parseFloat(targetValue),
+        frequency: "daily",
       });
-      if (res.ok) {
-        try {
-          const insertedId = await res.json();
-          const { database } = await import("@/db");
-          if (database) {
-            await database.write(async () => {
-              await database.get("daily_goals").create((record: any) => {
-                record._raw.id = insertedId;
-                record.metricType = selected;
-                record.targetValue = parseFloat(targetValue);
-                record.frequency = "daily";
-                record.userId = "auth-user";
-              });
-            });
-          }
-        } catch (err) {
-          console.error("Local DB insert skipped:", err);
-        }
 
-        onCreated();
-        setOpen(false);
-        setSelected(null);
-        setTargetValue("");
+      try {
+        const { database } = await import("@/db");
+        if (database) {
+          await database.write(async () => {
+            await database.get("daily_goals").create((record: any) => {
+              record._raw.id = insertedId;
+              record.metricType = selected;
+              record.targetValue = parseFloat(targetValue);
+              record.frequency = "daily";
+              record.userId = "auth-user";
+            });
+          });
+        }
+      } catch (err) {
+        console.error("Local DB insert skipped:", err);
       }
+
+      onCreated();
+      setOpen(false);
+      setSelected(null);
+      setTargetValue("");
     } catch (err) {
       console.error("Failed to save goal:", err);
     } finally {

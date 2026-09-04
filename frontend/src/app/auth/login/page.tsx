@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE } from "@/lib/api";
+import { apiFetch, setToken } from "@/lib/api";
+import { syncDatabase } from "@/db/sync";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,12 +27,13 @@ export default function LoginPage() {
       formData.append("username", email);
       formData.append("password", password);
 
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await apiFetch(`/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: formData,
+        skipAuthRedirect: true,
       });
 
       if (!res.ok) {
@@ -46,7 +48,10 @@ export default function LoginPage() {
       }
 
       const data = await res.json();
-      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
+      // Pull the account's server-side data into the local store before the
+      // reactive views mount, so a returning user isn't briefly shown nothing.
+      await syncDatabase();
       router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -64,8 +69,11 @@ export default function LoginPage() {
       </header>
 
       <div className="flex-1 flex flex-col justify-center pb-20">
-        <h1 className="text-2xl font-semibold tracking-tight mb-2">Welcome Back</h1>
-        <p className="text-muted-foreground mb-10 text-sm">Sign in to resume tracking</p>
+        <div className="grad-violet w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 mb-6 animate-fade-up">
+          <Activity size={28} strokeWidth={2} className="text-white" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight mb-2 animate-fade-up" style={{ animationDelay: "60ms" }}>Welcome back</h1>
+        <p className="text-muted-foreground mb-10 text-sm animate-fade-up" style={{ animationDelay: "100ms" }}>Sign in to resume tracking</p>
 
         <form onSubmit={handleLogin} className="space-y-5">
           {error && <div className="p-3 bg-destructive/8 text-destructive text-sm font-medium rounded-xl">{error}</div>}

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE } from "@/lib/api";
+import { apiFetch, setToken } from "@/lib/api";
+import { syncDatabase } from "@/db/sync";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,10 +45,11 @@ export default function RegisterPage() {
         gender: gender || null
       };
 
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const res = await apiFetch(`/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        skipAuthRedirect: true,
       });
 
       if (!res.ok) {
@@ -60,7 +62,8 @@ export default function RegisterPage() {
       }
 
       const data = await res.json();
-      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
+      await syncDatabase();
       router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -83,8 +86,8 @@ export default function RegisterPage() {
           {[1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`w-2 h-2 rounded-full transition-all ${
-                s === step ? "bg-primary w-6" : s < step ? "bg-primary/40" : "bg-border"
+              className={`h-2 rounded-full transition-all ${
+                s === step ? "grad-violet w-6" : s < step ? "bg-primary/40 w-2" : "bg-border w-2"
               }`}
             />
           ))}
@@ -96,7 +99,7 @@ export default function RegisterPage() {
         
         {step === 1 && (
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight mb-2">Create Account</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Create Account</h1>
             <p className="text-muted-foreground mb-10 text-sm">Let&apos;s get your basics down</p>
 
             <form onSubmit={handleNext} className="space-y-5">
@@ -130,8 +133,8 @@ export default function RegisterPage() {
                     placeholder="••••••••" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required 
-                    minLength={6}
+                    required
+                    minLength={8}
                   />
                   <button 
                     type="button"
@@ -155,7 +158,7 @@ export default function RegisterPage() {
 
         {step === 2 && (
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight mb-2">About You</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">About You</h1>
             <p className="text-muted-foreground mb-10 text-sm">This helps us personalize your metrics</p>
 
             <form onSubmit={handleNext} className="space-y-5">
@@ -201,7 +204,7 @@ export default function RegisterPage() {
 
         {step === 3 && (
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight mb-2">Your Body</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Your Body</h1>
             <p className="text-muted-foreground mb-10 text-sm">Final step before we begin</p>
 
             <form onSubmit={handleRegister} className="space-y-5">

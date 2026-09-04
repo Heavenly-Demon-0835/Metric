@@ -1,26 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Droplets, Plus, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiSend } from "@/lib/api";
 import { database } from "@/db";
+import { useLiveQuery } from "@/db/useLiveQuery";
 
 const PRESETS = [100, 250, 500, 750, 1000];
 
 export default function WaterIntake() {
-  const [waterLogs, setWaterLogs] = useState<any[]>([]);
+  const waterLogs = useLiveQuery<any>("water_logs");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [customAmount, setCustomAmount] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!database) return;
-    const sub = database.collections.get("water_logs").query().observe().subscribe(setWaterLogs);
-    return () => sub.unsubscribe();
-  }, []);
 
   const todayEntries = useMemo(() => {
     const today = new Date();
@@ -39,14 +34,7 @@ export default function WaterIntake() {
     setError("");
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/water/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ amount_ml: ml }),
-      });
-      if (!res.ok) throw new Error("Failed to log water");
-
-      const insertedId = await res.json();
+      const insertedId = await apiSend<string>("POST", "/water/", { amount_ml: ml });
 
       try {
         if (database) {
@@ -74,7 +62,7 @@ export default function WaterIntake() {
 
   const deleteEntry = async (entry: any) => {
     try {
-      await fetch(`${API_BASE}/water/${entry.id}`, { method: "DELETE", headers: getAuthHeaders() });
+      await apiSend("DELETE", `/water/${entry.id}`);
       if (database) {
         await database.write(async () => {
           await entry.markAsDeleted();
@@ -91,7 +79,7 @@ export default function WaterIntake() {
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Water Intake</h1>
+        <h1 className="text-lg font-bold tracking-tight">Water Intake</h1>
         <div className="w-10" />
       </header>
 
@@ -110,10 +98,16 @@ export default function WaterIntake() {
       <div className="flex flex-col items-center mb-10">
         <div className="relative w-44 h-44">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="85" fill="none" stroke="hsl(var(--secondary))" strokeWidth="10" />
+            <defs>
+              <linearGradient id="waterGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#0EA5E9" />
+                <stop offset="100%" stopColor="#06B6D4" />
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="85" fill="none" stroke="hsl(var(--secondary))" strokeWidth="12" />
             <circle
               cx="100" cy="100" r="85" fill="none"
-              stroke="hsl(var(--primary))" strokeWidth="10"
+              stroke="url(#waterGrad)" strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 85}`}
               strokeDashoffset={`${2 * Math.PI * 85 * (1 - progress / 100)}`}
@@ -121,8 +115,8 @@ export default function WaterIntake() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-2xl font-semibold">{totalMl}</p>
-            <p className="text-xs font-medium text-muted-foreground">/ {goalMl} ml</p>
+            <p className="text-4xl font-bold tracking-tight">{totalMl}</p>
+            <p className="text-xs font-medium text-muted-foreground mt-1">/ {goalMl} ml</p>
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_BASE, getAuthHeaders } from "@/lib/api";
+import { apiGet, apiSend } from "@/lib/api";
 import { useEffect, useRef } from "react";
 
 type SetRecord = {
@@ -49,10 +49,7 @@ export default function NewWorkout() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_BASE}/discovery/exercise?q=${encodeURIComponent(activeSearchQuery)}`, {
-          headers: getAuthHeaders()
-        });
-        if (res.ok) setSearchResults(await res.json());
+        setSearchResults(await apiGet(`/discovery/exercise?q=${encodeURIComponent(activeSearchQuery)}`));
       } catch {}
     }, 300);
     return () => clearTimeout(timer);
@@ -141,13 +138,7 @@ export default function NewWorkout() {
         }))
       };
 
-      const res = await fetch(`${API_BASE}/workouts/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to save workout");
+      await apiSend("POST", "/workouts/", payload);
       router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -162,7 +153,7 @@ export default function NewWorkout() {
         <Link href="/dashboard" className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={22} strokeWidth={1.5} />
         </Link>
-        <h1 className="text-lg font-semibold tracking-tight">Log Workout</h1>
+        <h1 className="text-lg font-bold tracking-tight">Log Workout</h1>
         <div className="w-10" />
       </header>
 

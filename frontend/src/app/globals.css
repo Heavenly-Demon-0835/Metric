@@ -87,3 +87,34 @@
     transition: all 0.2s ease;
   }
 }
+
+/* ── Energetic theme: gradients + motion ─────────────────────────────
+   Bold accent gradients reused across the app. Each category owns a
+   colour so the UI reads as one system. Declared as Tailwind v4
+   @utility so they're emitted like first-class utilities. */
+@utility grad-hero    { background-image: linear-gradient(140deg, #7C5CFF 0%, #6D3FF2 52%, #9A46F5 100%); }
+@utility grad-violet  { background-image: linear-gradient(135deg, #7C5CFF, #5B3DF0); }
+@utility grad-emerald { background-image: linear-gradient(135deg, #10B981, #0D9488); }
+@utility grad-sky     { background-image: linear-gradient(135deg, #0EA5E9, #06B6D4); }
+@utility grad-fuchsia { background-image: linear-gradient(135deg, #D946EF, #EC4899); }
+@utility grad-indigo  { background-image: linear-gradient(135deg, #6366F1, #3B82F6); }
+@utility grad-amber   { background-image: linear-gradient(135deg, #F59E0B, #F97316); }
+
+@utility text-grad {
+  background-image: linear-gradient(120deg, #7C5CFF, #B23FF0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+@utility animate-fade-up {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up { animation: none !important; }
+}
