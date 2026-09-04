@@ -7,4 +7,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .env
+# Backups and local variants (.env.bak, .env.local) carry real secrets too.
+.env.*
+!.env.example
 .DS_Store

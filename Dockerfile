@@ -15,4 +15,6 @@ COPY backend/ ./
 EXPOSE 8000
 
 # Start uvicorn – Railway injects $PORT at runtime
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# --proxy-headers so ratelimit.py reads the real client IP from X-Forwarded-For
+# rather than keying every caller to Railway's proxy address.
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips="*"

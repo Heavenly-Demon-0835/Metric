@@ -1,0 +1,21 @@
+# Secrets must never reach an image layer. `COPY backend/ ./` would otherwise
+# bake the live Atlas password and JWT_SECRET into the build. Patterns are
+# path-anchored, so `**/` is required to catch backend/.env — not just `.env`.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build/runtime junk that only slows the context upload.
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+
+# The frontend deploys to Vercel; the backend image has no use for it.
+frontend/
+**/node_modules/
+**/.next/
+
+.git/
+.gitignore
+.claude/

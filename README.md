@@ -107,12 +107,17 @@ The system relies on a denormalized document structure optimized for heavy read/
    ```bash
    pip install -r requirements.txt
    ```
-4. Configure `.env`:
+4. Configure `.env` (copy `backend/.env.example` and fill it in):
    ```env
-   MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/
-   DATABASE_NAME=metric_db
+   # The database name must be in the URI path — there is no DATABASE_NAME
+   # setting, and omitting it silently sends you to a different database.
+   # Percent-encode reserved characters in the password (@ becomes %40).
+   MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/metric_app?retryWrites=true&w=majority
    JWT_SECRET=your_secret_key
+   ALLOWED_ORIGINS=http://localhost:3000
    ```
+   `MONGO_URI` and `JWT_SECRET` are both required; the server refuses to start
+   without them.
 5. Run the server:
    ```bash
    python -m uvicorn main:app --reload
